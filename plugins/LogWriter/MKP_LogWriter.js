@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan (MikanHako)
 //  plugin : MKP_LogWriter.js 日志记录
-// version : v1.0.1 增加按钮提示 + 可以通过插件参数设置按钮文字和颜色
+// version : v1.0.2 先显示按钮再显示文字 防止文字太长使得按钮不显示
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -22,7 +22,9 @@
 /*:
  * @plugindesc 日志记录 <MKP_LogWriter>
  * @author Mikan (MikanHako)
- * @version v1.0.1 增加按钮提示 + 可以通过插件参数设置按钮文字和颜色
+ * @version 
+ * v1.0.2 先显示按钮再显示文字 防止文字太长使得按钮不显示
+ * v1.0.1 增加按钮提示 + 可以通过插件参数设置按钮文字和颜色
  * v1.0.0 2021/08/04 完成初版插件
  * v0.0.0 2021/08/03 项目计划中
  * 
@@ -517,6 +519,21 @@ Graphics._errorPrinterAddBr = function() {
 	this._errorPrinter.appendChild(document.createElement('br'));
 };
 
+Graphics._errorPrinterAddErrorMessage = function(name, message) {
+	var font1 = document.createElement('font');
+	font1.color = 'yellow';
+	font1.innerHTML = '<b>' + name + '</b>';
+
+	var font2 = document.createElement('font');
+	font2.color = 'white';
+	font2.innerHTML = '' + message;
+
+	this._errorPrinter.appendChild(font1);
+	this._errorPrinterAddBr();
+	this._errorPrinter.appendChild(font2);
+	this._errorPrinterAddBr();
+};
+
 
 const _MK_Graphics__updateErrorPrinter = Graphics._updateErrorPrinter;
 Graphics._updateErrorPrinter = function() {
@@ -531,17 +548,19 @@ const _MK_Graphics_printError = Graphics.printError;
 Graphics.printError = function(name, message) {
 	this._errorShowed = true;
 	if (this._errorPrinter) {
-		this._errorPrinter.innerHTML = this._makeErrorHtml(name, message);
+		//this._errorPrinter.innerHTML = this._makeErrorHtml(name, message);
 
 		if (this.ERROR_PRINTER_SHOW_BUTTON_SAVE_ERROR) {
-			this._errorPrinterAddBr();
 			this._errorPrinterAddSaveError();
+			this._errorPrinterAddBr();
 		}
 
 		if (this.ERROR_PRINTER_SHOW_BUTTON_SHOW_DETAIL) {
-			this._errorPrinterAddBr();
 			this._errorPrinterAddShowDetail();
+			this._errorPrinterAddBr();
 		}
+
+		this._errorPrinterAddErrorMessage(name, message);
 	}
 	this._applyCanvasFilter();
 	this._clearUpperCanvas();
@@ -550,22 +569,24 @@ Graphics.printError = function(name, message) {
 const _MK_Graphics_printLoadingError = Graphics.printLoadingError;
 Graphics.printLoadingError = function(url) {
 	if (this._errorPrinter && !this._errorShowed) {
-		this._errorPrinter.innerHTML = this._makeErrorHtml('Loading Error', 'Failed to load: ' + url);
+		//this._errorPrinter.innerHTML = this._makeErrorHtml('Loading Error', 'Failed to load: ' + url);
 		
 		if (this.ERROR_PRINTER_SHOW_BUTTON_RETRY) {
-			this._errorPrinterAddBr();
 			this._errorPrinterAddRetryLoad();
+			this._errorPrinterAddBr();
 		}
 
 		if (this.ERROR_PRINTER_SHOW_BUTTON_SAVE_ERROR) {
-			this._errorPrinterAddBr();
 			this._errorPrinterAddSaveError();
+			this._errorPrinterAddBr();
 		}
 
 		if (this.ERROR_PRINTER_SHOW_BUTTON_SHOW_DETAIL) {
-			this._errorPrinterAddBr();
 			this._errorPrinterAddShowDetail();
+			this._errorPrinterAddBr();
 		}
+
+		this._errorPrinterAddErrorMessage('Loading Error', 'Failed to load: ' + url);
 
 		this._loadingCount = -Infinity;
 	}
