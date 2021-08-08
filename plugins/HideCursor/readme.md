@@ -9,6 +9,6 @@
 
 
 ## Author
-Mikan(MIkanHako)
+Mikan(MikanHako)
 Copyright (C) 2020-2021 Mikan(MikanHako)  
 
