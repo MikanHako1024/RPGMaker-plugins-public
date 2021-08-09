@@ -8,6 +8,7 @@ public plugins for RPGMakerMV / MZ
 | ---- | ---- | :--: | :--: |
 | [LogWriter](plugins/LogWriter) | 日志记录 | √ | × |
 | [HideCursor](plugins/HideCursor) | 隐藏鼠标光标 | √ | √ |
+| [ParallaxPicture](plugins/ParallaxPicture) | 视差图片 | √ | ? |
 
 
 ## Copyright
