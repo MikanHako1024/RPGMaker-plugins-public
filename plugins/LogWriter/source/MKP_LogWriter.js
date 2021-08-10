@@ -282,20 +282,28 @@ ConsoleRecorder.makeErrorStack = function(error, deep, abbreviated) {
 };
 
 ConsoleRecorder._makeNewRecord = function(type, ...args) {
+	//var stack = '';
+	//try { throw new Error(); }
+	//catch (e) { stack = e.stack; }
 	var error = '';
 	try { throw new Error(); }
 	catch (e) { error = e; }
 	return {
 		type : type, 
+		//msg : [...args].map(each => JSON.stringify(each)).join('  '), 
+		//msg : [...args].map(each => JsonEx.stringify(each)).join('  '), 
+		// 包含 无constructor的对象时 使用JsonEx.stringify 会报错 ...
 		msg : [...args].map(function(each) {
 			try {
 				return JsonEx.stringify(each);
 			}
 			catch (e1) {
+				// ？普通的 JSON.stringify 可能会因对象循环而报错 ...
 				try {
 					return JSON.stringify(each);
 				}
 				catch (e2) {
+					//return `${String(object)}(can't stringify)`;
 					try {
 						return `${String(object)}(can't stringify)`;
 					}
@@ -306,6 +314,17 @@ ConsoleRecorder._makeNewRecord = function(type, ...args) {
 			}
 		}).join('  '), 
 
+		//stack : stack.split('\n').slice(4).join('\n'), 
+		//stack : stack
+		//	.split('\n')
+		//	.slice(4)
+		//	.map(each => 
+		//		each.replace(
+		//			/chrome-extension:\/\/[a-z]*?\//, 
+		//			'file://' + nw.__dirname.replace(/\\/g, '/') + '/'
+		//		))
+		//	.join('\n'), 
+		//stack : this.makeErrorStack(error), 
 		stack : this.makeErrorStack(error, 4), 
 		time : Date.now(), 
 	};
@@ -404,6 +423,7 @@ ConsoleRecorder.showMessageFileInExplorer = function() {
 };
 
 ConsoleRecorder.showDetailInfoInExplorer = function() {
+	//nw.Shell.openItem(nw.App.dataPath);
 	nw.Shell.showItemInFolder(nw.App.dataPath);
 };
 
@@ -413,6 +433,8 @@ MK_Plugins.class['ConsoleRecorder'] = ConsoleRecorder;
 
 ConsoleRecorder.initialize();
 
+
+// TODO : ？保存现场 ...
 
 
 
@@ -448,15 +470,19 @@ Graphics._createErrorPrinterButton = function(name, callback) {
 	button.innerHTML = name;
 	button.style.margin = '5px';
 	button.style.fontSize = '24px';
+	//button.style.color = '#ffffff';
 	button.style.color = this.ERROR_PRINTER_BUTTON_TEXT_COLOR;
 	button.style.backgroundColor = '#000000';
 	button.onmousedown = button.ontouchstart = callback;
 	return button;
 };
 
+//Graphics._createErrorPrinterButtonPrompt = function(text, color) {
 Graphics._createErrorPrinterButtonPrompt = function(text) {
 	var font = document.createElement('font');
 	font.innerHTML = text;
+	//font.style.color = color;
+	//font.style.color = 'orange';
 	font.style.color = this.ERROR_PRINTER_BUTTON_PROMPT_COLOR;
 	font.style.margin = '5px';
 	return font;
@@ -464,6 +490,7 @@ Graphics._createErrorPrinterButtonPrompt = function(text) {
 
 Graphics._errorPrinterAddRetryLoad = function() {
 	var button = this._createErrorPrinterButton(
+		//'retry', 
 		this.ERROR_PRINTER_BUTTON_TEXT_RETRY, 
 		function(event) {
 			ResourceHandler.retry();
@@ -472,12 +499,15 @@ Graphics._errorPrinterAddRetryLoad = function() {
 	this._errorPrinter.appendChild(button);
 
 	var msg = this._createErrorPrinterButtonPrompt(
+		//'reload picture or script file', 
+		//'orange');
 		this.ERROR_PRINTER_BUTTON_PROMPT_RETRY);
 	this._errorPrinter.appendChild(msg);
 };
 
 Graphics._errorPrinterAddSaveError = function() {
 	var button = this._createErrorPrinterButton(
+		//'save error info', 
 		this.ERROR_PRINTER_BUTTON_TEXT_SAVE_ERROR, 
 		function(event) {
 			ConsoleRecorder.saveMessageFile();
@@ -486,12 +516,15 @@ Graphics._errorPrinterAddSaveError = function() {
 	this._errorPrinter.appendChild(button);
 
 	var msg = this._createErrorPrinterButtonPrompt(
+		//'collect error information for debugging', 
+		//'orange');
 		this.ERROR_PRINTER_BUTTON_PROMPT_SAVE_ERROR);
 	this._errorPrinter.appendChild(msg);
 };
 
 Graphics._errorPrinterAddShowDetail = function() {
 	var button = this._createErrorPrinterButton(
+		//'show detail info in explorer', 
 		this.ERROR_PRINTER_BUTTON_TEXT_SHOW_DETAIL, 
 		function(event) {
 			ConsoleRecorder.showDetailInfoInExplorer();
@@ -499,6 +532,8 @@ Graphics._errorPrinterAddShowDetail = function() {
 	this._errorPrinter.appendChild(button);
 
 	var msg = this._createErrorPrinterButtonPrompt(
+		//'show detail information for debugging', 
+		//'orange');
 		this.ERROR_PRINTER_BUTTON_PROMPT_SHOW_DETAIL);
 	this._errorPrinter.appendChild(msg);
 };
@@ -536,6 +571,8 @@ const _MK_Graphics_printError = Graphics.printError;
 Graphics.printError = function(name, message) {
 	this._errorShowed = true;
 	if (this._errorPrinter) {
+		//this._errorPrinter.innerHTML = this._makeErrorHtml(name, message);
+
 		if (this.ERROR_PRINTER_SHOW_BUTTON_SAVE_ERROR) {
 			this._errorPrinterAddSaveError();
 			this._errorPrinterAddBr();
@@ -555,6 +592,8 @@ Graphics.printError = function(name, message) {
 const _MK_Graphics_printLoadingError = Graphics.printLoadingError;
 Graphics.printLoadingError = function(url) {
 	if (this._errorPrinter && !this._errorShowed) {
+		//this._errorPrinter.innerHTML = this._makeErrorHtml('Loading Error', 'Failed to load: ' + url);
+		
 		if (this.ERROR_PRINTER_SHOW_BUTTON_RETRY) {
 			this._errorPrinterAddRetryLoad();
 			this._errorPrinterAddBr();
@@ -639,6 +678,34 @@ DataManager.saveGame = function(savefileId) {
 	}
 };
 
+const _MK_SceneManager_run = SceneManager.run;
+SceneManager.run = function(sceneClass) {
+	try {
+		this.initialize();
+		this.goto(sceneClass);
+		this.requestUpdate();
+	} catch (e) {
+		//console.error('fail to SceneManager.run', ConsoleRecorder.makeErrorStack(e));
+		this.catchException(e);
+	}
+};
+
+const _MK_SceneManager_update = SceneManager.update;
+SceneManager.update = function() {
+	try {
+		this.tickStart();
+		if (Utils.isMobileSafari()) {
+			this.updateInputData();
+		}
+		this.updateManagers();
+		this.updateMain();
+		this.tickEnd();
+	} catch (e) {
+		//console.error('fail to SceneManager.update', ConsoleRecorder.makeErrorStack(e));
+		this.catchException(e);
+	}
+};
+
 const _MK_SceneManager_onError = SceneManager.onError;
 SceneManager.onError = function(e) {
 	console.error(e.message);
@@ -655,6 +722,8 @@ SceneManager.onError = function(e) {
 const _MK_SceneManager_catchException = SceneManager.catchException;
 SceneManager.catchException = function(e) {
 	if (e instanceof Error) {
+		//Graphics.printError(e.name, e.message);
+		//console.error(e.stack);
 		console.error(ConsoleRecorder.makeErrorStack(e));
 		Graphics.printError(
 			e.name + '<br>' + e.message, 
