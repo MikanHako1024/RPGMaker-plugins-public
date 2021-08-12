@@ -54,7 +54,7 @@
   - 0 : 隐藏箭头
   - 1 : 显示箭头
 
-#### \WAIT[..]
+#### 等待
 当顺序显示文字到达该控制字符时，执行操作  
 等待指定帧数后再显示之后的文字  
 
@@ -79,5 +79,5 @@
 
 
 ## Author
-Mikan(MikanHako)
+Mikan(MikanHako)  
 Copyright (C) 2020-2021 Mikan(MikanHako)  

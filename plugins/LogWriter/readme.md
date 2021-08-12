@@ -1,4 +1,4 @@
-# LogWriter
+# LogWriter <日志记录>
 
 本插件用于显示和保存详细的错误信息  
 当报错让游戏无法进行时 将会出现以下三个按钮  
@@ -36,5 +36,5 @@
 
 
 ## Author
-Mikan
+Mikan(MikanHako)  
 Copyright (C) 2021 Mikan(MikanHako)  
