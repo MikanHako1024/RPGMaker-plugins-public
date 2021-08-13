@@ -10,6 +10,7 @@ public plugins for RPGMakerMV / MZ
 | [HideCursor](plugins/HideCursor) | 隐藏鼠标光标 | √ | √ |
 | [ParallaxPicture](plugins/ParallaxPicture) | 视差图片 | √ | ? |
 | [MoreMsgSymbol](plugins/MoreMsgSymbol) | 更多控制字符 | √ | ? |
+| [EventSoundSource](plugins/EventSoundSource) | 事件音源 | √ | ? |
 
 
 ## Copyright
