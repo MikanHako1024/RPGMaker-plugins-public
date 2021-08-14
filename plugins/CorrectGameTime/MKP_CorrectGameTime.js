@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan (MikanHako)
 //  plugin : MKP_CorrectGameTime.js 修正游戏时间
-// version : v0.1.1 2021/08/12 修复读档时游戏时间缺省时显示问题
+// version : v0.2.0 2021/08/13 增加MZ版本
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.2.0 2021/08/13 增加MZ版本
  *   v0.1.1 2021/08/12 修复读档时游戏时间缺省时显示问题
  *   v0.1.0 2021/08/12 完成基本功能
  *   v0.0.0 2021/08/12 项目计划中
@@ -33,6 +34,9 @@
  * 
  * @help
  * 
+ * 修正游戏时间 <MKP_CorrectGameTime>
+ * 
+ * 
  * ## 简要说明
  * 
  * 在显示器刷新率超过60Hz时，游戏时间会表现得不正常  
@@ -40,7 +44,9 @@
  * 
  * 基本原理为：
  * 用实际经过时间作为游戏时间，而不是用渲染次数计算游戏时间  
- * 所以暂停中的时间也会算入
+ * 所以暂停中的时间可能也会算入 (这点在MZ中表得正常)  
+ * 
+ * MV / MZ 均适用  
  * 
  * 
  * ## 使用方法
@@ -50,7 +56,8 @@
  * 
  * ## 后续任务
  * 
- * - [ ] MZ版本
+ * - [x] MZ版本
+ * - [ ] 测试时间是否正确的工具/脚本
  * 
  * 
  * ## 联系方式
@@ -80,8 +87,11 @@
 
 
 
-(function() {
+(function(isMV, isMZ) {
 
+
+// --------------------------------
+// Graphics.realGameTime
 
 Graphics.realGameTime = 0;
 
@@ -91,26 +101,18 @@ DataManager.setupNewGame = function() {
 	Graphics.realGameTime = 0;
 };
 
-
-SceneManager._currentRealGameTime = Date.now();
-
-SceneManager.refreshRealGameTime = function() {
-	var nowTime = Date.now();
-	var elapsed = nowTime - this._currentRealGameTime;
-	this._currentRealGameTime = nowTime;
-
-	if (true) { // 是否需要累加时间
-		Graphics.realGameTime += elapsed;
+Graphics.needAccumulateRealGameTime = function() {
+	return true;
+};
+Graphics.realGameTimeFly = function(deltaTime) {
+	if (this.needAccumulateRealGameTime()) {
+		this.realGameTime += deltaTime;
 	}
 };
 
 
-const _MK_SceneManager_tickEnd = SceneManager.tickEnd;
-SceneManager.tickEnd = function() {
-    this.refreshRealGameTime();
-	_MK_SceneManager_tickEnd.apply(this, arguments);
-};
-
+// --------------------------------
+// Game_System
 
 const _MK_Game_System_onBeforeSave = Game_System.prototype.onBeforeSave;
 Game_System.prototype.onBeforeSave = function() {
@@ -124,14 +126,59 @@ Game_System.prototype.onAfterLoad = function() {
 	Graphics.realGameTime = this._realGameTimeOnSave || (Graphics.frameCount / 60 * 1000);
 };
 
-
 const _MK_Game_System_playtime = Game_System.prototype.playtime;
 Game_System.prototype.playtime = function() {
 	return Math.floor(Graphics.realGameTime / 1000);
 };
 
 
-})();
+// --------------------------------
+// update
+
+if (isMV) {
+
+	SceneManager._currentRealGameTime = Date.now();
+
+	SceneManager.refreshRealGameTime = function() {
+		var nowTime = Date.now();
+		var elapsed = nowTime - this._currentRealGameTime;
+		this._currentRealGameTime = nowTime;
+
+		Graphics.realGameTimeFly(elapsed);
+	};
+
+	const _MK_SceneManager_tickEnd = SceneManager.tickEnd;
+	SceneManager.tickEnd = function() {
+		this.refreshRealGameTime();
+		_MK_SceneManager_tickEnd.apply(this, arguments);
+	};
+
+}
+else if (isMZ) {
+
+	const _MK_SceneManager_update = SceneManager.update;
+	SceneManager.update = function(deltaTime) {
+		_MK_SceneManager_update.apply(this, arguments);
+
+		Graphics.realGameTimeFly(deltaTime * 1000);
+	};
+
+}
+
+})(
+	Utils.RPGMAKER_NAME == 'MV', 
+	Utils.RPGMAKER_NAME == 'MZ'
+);
+
+
+/*
+console.log(
+	`现实 : ${new Date().toLocaleString()} | 游戏 : ${$gameSystem.playtimeText()}`);
+setTimeout(
+	() => console.log(
+		`现实 : ${new Date().toLocaleString()} | 游戏 : ${$gameSystem.playtimeText()}`), 
+	1 * 60 * 1000);
+*/
 
 
 
