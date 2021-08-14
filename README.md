@@ -11,6 +11,7 @@ public plugins for RPGMakerMV / MZ
 | [ParallaxPicture](plugins/ParallaxPicture) | 视差图片 | √ | ? |
 | [MoreMsgSymbol](plugins/MoreMsgSymbol) | 更多控制字符 | √ | ? |
 | [EventSoundSource](plugins/EventSoundSource) | 事件音源 | √ | ? |
+| [CorrectGameTime](plugins/CorrectGameTime) | 修正游戏时间 | √ | × |
 
 
 ## Copyright
