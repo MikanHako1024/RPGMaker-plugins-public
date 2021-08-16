@@ -13,6 +13,7 @@ public plugins for RPGMakerMV / MZ
 | [EventSoundSource](plugins/EventSoundSource) | 事件音源 | √ | ? |
 | [CorrectGameTime](plugins/CorrectGameTime) | 修正游戏时间 | √ | √ |
 | [PictureWithinMap](plugins/PictureWithinMap) | 图片置于地图内 | √ | ? |
+| [AnimatedMessage](plugins/AnimatedMessage) | 动画消息 | √ | ? |
 
 
 ## Copyright
