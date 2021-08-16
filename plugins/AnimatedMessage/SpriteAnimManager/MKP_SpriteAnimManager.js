@@ -2045,7 +2045,7 @@ MK_TextAnim_Karaoke._PARAM_CONFIG = [
 
 (function() {
 
-	var pluginName = 'MK_SpriteAnimManager';
+	var pluginName = 'MKP_SpriteAnimManager';
 	var param      = MK_Data.param[pluginName];
 
 	param['animParamsConfig'].forEach(function(animParams) {
