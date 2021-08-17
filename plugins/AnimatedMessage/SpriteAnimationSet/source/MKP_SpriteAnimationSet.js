@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_SpriteAnimationSet.js 精灵动画集
-// version : v0.1.0 2021/08/17 最初的版本
+// version : v0.2.0-alpha 2021/08/18 更新框架 : TextSprite解耦
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.2.0-alpha 2021/08/18 更新框架 : TextSprite解耦
  *   v0.1.0.branch1 2021/08/17 清理冗余注释
  *   v0.1.0 2021/08/17 最初的版本
  *     从MKP_SpriteAnimManager中分离出 处理精灵动画播放效果的框架和所有的精灵动画类
@@ -40,19 +41,22 @@
  * ## 简要说明
  * 
  * 完成精灵动画功能的三个插件之一  
- * + 插件`MKP_SpriteAnimationSet`(本插件)
- *   - 提供处理精灵动画播放的效果的类
- * + 插件`MKP_SpriteAnimManager`
- *   - 用来设置动画和动画参数
  * + 插件`MKP_TextSprite`
- *   - 用来播放动画
+ *   - 支持播放动画
+ * + 插件`MKP_SpriteAnimationSet`
+ *   - 提供处理精灵动画播放的效果
+ * + 插件`MKP_SpriteAnimManager`(本插件)
+ *   - 用来设置动画和动画参数、处理消息框文字播放动画
  * 
  * 文本动画的描述和参数列表 见 【其他说明】  
  * 
  * 
  * ## 使用方法
  * 
- * 导入本插件即可  
+ * 按顺序导入 完成精灵动画功能的三个插件  
+ * + MKP_TextSprite
+ * + MKP_SpriteAnimationSet
+ * + MKP_SpriteAnimManager
  * 
  * 
  * ## 脚本说明
@@ -420,14 +424,17 @@ MK_SpriteAnimBase.prototype.initTargets = function() {
 // 而是保存在动画类的目标中，并与精灵对应
 // 所以添加目标时，要同时创建其保存变量的对象
 
-MK_SpriteAnimBase.prototype.createTargetObjWithVar = function(sprite, varObj) {
+//MK_SpriteAnimBase.prototype.createTargetObjWithVar = function(sprite, varObj) {
+MK_SpriteAnimBase.prototype.createTargetObjWithVar = function(sprite, data, varObj) {
 	return {
 		'sprite': sprite || null,
+		'data': data || {}, // 暂未使用
 		'var': varObj || {},
 	};
 };
-MK_SpriteAnimBase.prototype.createTargetObj = function(sprite) {
-	return this.createTargetObjWithVar(sprite);
+//MK_SpriteAnimBase.prototype.createTargetObj = function(sprite) {
+MK_SpriteAnimBase.prototype.createTargetObj = function(sprite, data) {
+	return this.createTargetObjWithVar(sprite, data);
 };
 
 
@@ -435,9 +442,12 @@ MK_SpriteAnimBase.prototype.createTargetObj = function(sprite) {
 // --------------------------------
 // 添加目标
 
-MK_SpriteAnimBase.prototype.addTarget = function(sprite) {
+//MK_SpriteAnimBase.prototype.addTarget = function(sprite) {
+MK_SpriteAnimBase.prototype.addTarget = function(sprite, data) {
+	// TODO : 精灵动画的框架内 不需要 flagAllowAdd 等
 	if (this._flagAllowAdd) {
-		var targetObj = this.createTargetObj(sprite);
+		//var targetObj = this.createTargetObj(sprite);
+		var targetObj = this.createTargetObj(sprite, data);
 		this._targets.push(targetObj);
 		var args = [...arguments].splice(1);
 		this.onAddTarget(targetObj, ...args);
@@ -461,7 +471,14 @@ MK_SpriteAnimBase.prototype.getAnimFlagKey = function(flagName) {
 };
 
 MK_SpriteAnimBase.prototype.setAnimFlag = function(flagName, value) {
-	this[this.getAnimFlagKey(flagName)] = !!value;
+	//this[this.getAnimFlagKey(flagName)] = !!value;
+	var key = this.getAnimFlagKey(flagName);
+	if (this[key] !== undefined) {
+		this[key] = !!value;
+	}
+	else {
+		console.warn(`unknown flagName "${flagName}"`, flagName, key, value);
+	}
 };
 MK_SpriteAnimBase.prototype.setAnimFlagOn = function(flagName) {
 	this.setAnimFlag(flagName, true);

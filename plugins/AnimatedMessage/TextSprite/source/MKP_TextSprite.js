@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_TextSprite.js 文本精灵
-// version : v0.1.2 2021/08/17 更新MKP_SpriteAnimManager的框架 相应地更新插件说明
+// version : v0.2.0-alpha 2021/08/18 更新框架 : TextSprite解耦
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.2.0-alpha 2021/08/18 更新框架 : TextSprite解耦
  *   v0.1.2.branch1 2021/08/17 清理冗余注释
  *   v0.1.2 2021/08/17 更新MKP_SpriteAnimManager的框架 相应地更新插件说明
  *   v0.1.1 2021/08/16 更新插件说明及规约
@@ -43,12 +44,12 @@
  * ## 简要说明
  * 
  * 完成精灵动画功能的三个插件之一  
+ * + 插件`MKP_TextSprite`
+ *   - 支持播放动画
  * + 插件`MKP_SpriteAnimationSet`
- *   - 提供处理精灵动画播放的效果的类
- * + 插件`MKP_SpriteAnimManager`
- *   - 用来设置动画和动画参数
- * + 插件`MKP_TextSprite`(本插件)
- *   - 用来播放动画
+ *   - 提供处理精灵动画播放的效果
+ * + 插件`MKP_SpriteAnimManager`(本插件)
+ *   - 用来设置动画和动画参数、处理消息框文字播放动画
  * 
  * 首先对动画进行配置，详细操作见 插件`MKP_SpriteAnimManager`  
  * 之后在编辑消息时，使用特殊字串触发一些播放动画的操作，
@@ -58,10 +59,10 @@
  * 
  * ## 使用方法
  * 
- * 导入 完成精灵动画功能的三个插件  
+ * 按顺序导入 完成精灵动画功能的三个插件  
+ * + MKP_TextSprite
  * + MKP_SpriteAnimationSet
  * + MKP_SpriteAnimManager
- * + MKP_TextSprite
  * 
  * 在【显示文本】之前，需要设置动画，详见 插件`MKP_SpriteAnimManager`  
  * 之后在【显示文本】里编辑消息时，使用控制字符触发操作，详见 【控制字符】  
@@ -303,6 +304,9 @@ MK_TextBitmap.prototype.clear = function() {
 // 每个精灵的信息 仍由文字的精灵存储
 // MK_TextSprite是精灵容器，同时储存动画，控制动画
 
+// TODO : 改名
+// 如 LetterSpriteContainer
+
 function MK_TextSprite() {
 	this.initialize.apply(this, arguments);
 };
@@ -310,6 +314,7 @@ function MK_TextSprite() {
 MK_TextSprite.prototype = Object.create(Sprite.prototype);
 MK_TextSprite.prototype.constructor = MK_TextSprite;
 
+/*
 MK_TextSprite.prototype.initialize = function() {
 	Sprite.prototype.initialize.apply(this, arguments);
 
@@ -324,7 +329,7 @@ MK_TextSprite.prototype.initialize = function() {
 };
 
 MK_TextSprite.prototype.init = function() {
-	this.bitmap = null;
+	this.bitmap = null; // ？...
 
 	// 文字精灵列表
 	this.initLetterList();
@@ -332,6 +337,22 @@ MK_TextSprite.prototype.init = function() {
 	// 文本动画列表
 	this.initTextAnimList();
 
+	// 消息窗口
+	this._msgWindow = null;
+};
+*/
+MK_TextSprite.prototype.initialize = function() {
+	Sprite.prototype.initialize.apply(this, arguments);
+	this.clearAll();
+};
+
+MK_TextSprite.prototype.clearAll = function() {
+	// 文字精灵列表
+	this.initLetterList();
+	// 文本动画列表
+	//this.initTextAnimList();
+	// 清空标志
+	this.clearAllFlag();
 	// 消息窗口
 	this._msgWindow = null;
 };
@@ -351,9 +372,15 @@ MK_TextSprite.prototype.clearLetters = function() {
 };
 
 
+// 续写该方法以监听清空文字精灵
+MK_TextSprite.prototype.onClearLetters = function() {
+};
+
+
 // --------------------------------
 // 添加文字精灵
 
+/*
 MK_TextSprite.prototype.addLetterSprite = function(sprite) {
 	this.addTextAnimTarget(sprite);
 
@@ -367,31 +394,52 @@ MK_TextSprite.prototype.addTextAnimTarget = function(sprite) {
 		textAnim.addTarget(sprite);
 	}, this);
 };
+*/
 
-/*
-MK_TextSprite.prototype.addLetterSprite = function(sprite, text, x, y) {
-	if (!sprite) return ;
-
-	//this.addTextAnimTarget(sprite);
-
-	//this._letters.push(sprite);
-	this._letters.push({
+MK_TextSprite.prototype.createLetterObject = function(sprite, text, x, y) {
+	return {
 		sprite : sprite, 
 		text : text || '', 
 		x : x === undefined ? sprite.x : x, 
 		y : y === undefined ? sprite.y : y, 
 		//flag : {}, 
 		flag : Object.assign({}, this._newLetterFlag), 
-	});
+		data : {}, 
+	}
+};
+
+MK_TextSprite.prototype.addLetterSprite = function(sprite, text, x, y) {
+	if (!sprite) return ;
+
+	//this.addTextAnimTarget(sprite);
+
+	//this._letters.push(sprite);
+	//this._letters.push({
+	//	sprite : sprite, 
+	//	text : text || '', 
+	//	x : x === undefined ? sprite.x : x, 
+	//	y : y === undefined ? sprite.y : y, 
+	//	//flag : {}, 
+	//	flag : Object.assign({}, this._newLetterFlag), 
+	//});
+	var letterObj = this.createLetterObject(sprite, text, x, y);
+	this._letters.push(letterObj);
 
 	//this.initLetter(sprite); // TODO
 
 	this.addChild(sprite);
+
+	this.onAddLetterSprite(letterObj);
 };
-*/
+
+
+// 续写该方法以监听添加文字精灵
+MK_TextSprite.prototype.onAddLetterSprite = function(letterObj) {
+};
 
 
 
+/*
 // --------------------------------
 // 文本动画列表
 
@@ -403,7 +451,7 @@ MK_TextSprite.prototype.getTextAnim = function(code) {
 	return this._textAnimList[code];
 };
 
-// ？不再 耦合 textAnim ...
+// ？不耦合 textAnim ...
 
 
 // --------------------------------
@@ -423,7 +471,7 @@ MK_TextSprite.prototype.addTextAnimByCode = function(code) {
 	!!textAnim && this.addTextAnim(textAnim);
 };
 
-// ？不再 耦合 textAnim ...
+// ？不耦合 textAnim ...
 
 
 // --------------------------------
@@ -440,7 +488,7 @@ MK_TextSprite.prototype.updateTextAnim = function() {
 	}, this);
 };
 
-// ？不再 耦合 textAnim ...
+// ？不耦合 textAnim ...
 
 
 // --------------------------------
@@ -498,7 +546,7 @@ MK_TextSprite.prototype.setAnimFlagOn = function(code) {
 MK_TextSprite.prototype.setAnimFlagOff = function(code) {
 	this.setAnimFlagByCode(code, false);
 };
-*/
+* /
 // ？实际上是 是否需要添加文本精灵 的标记 ...
 // ？这个标记也放进MK_SpriteAnimBase里 ...
 
@@ -510,6 +558,7 @@ MK_TextSprite.prototype.setFlagAllowAddOff = function(code) {
 	var textAnim = this.getTextAnim(code);
 	!!textAnim && textAnim.setFlagAllowAddOff();
 };
+*/
 
 // ？解耦 ...
 // ？文本精灵 不应该 与动画和动画管理器 耦合 ...
@@ -523,23 +572,9 @@ MK_TextSprite.prototype.setFlagAllowAddOff = function(code) {
 // ？现在把这些标志放在 文本精灵的单个字母精灵里 ...
 // ？...
 
-/*
+
 // --------------------------------
-// 设置标志
-
-MK_TextSprite.prototype.setNewLetterFlag = function(key, value) {
-	this._newLetterFlag[key] = value === undefined ? true : !!value;
-};
-MK_TextSprite.prototype.setTextSpriteFlag = function(key, value) {
-	this._textSpriteFlag[key] = value === undefined ? true : !!value;
-};
-
-MK_TextSprite.prototype.setNewLetterAnimFlag = function(key, code, value) {
-	this.setNewLetterFlag(key + '_' + code, value);
-};
-MK_TextSprite.prototype.setTextSpriteAnimFlag = function(key, code, value) {
-	this.setTextSpriteFlag(key + '_' + code, value);
-};
+// 设置和获取标志
 
 MK_TextSprite.prototype.clearNewLetterFlag = function() {
 	this._newLetterFlag = {};
@@ -547,8 +582,69 @@ MK_TextSprite.prototype.clearNewLetterFlag = function() {
 MK_TextSprite.prototype.clearTextSpriteFlag = function() {
 	this._textSpriteFlag = {};
 };
+MK_TextSprite.prototype.clearTextSpriteData = function() {
+	this._textSpriteData = {};
+};
+
+MK_TextSprite.prototype.clearAllFlag = function() {
+	this.clearNewLetterFlag();
+	this.clearTextSpriteFlag();
+	this.clearTextSpriteData();
+};
+
+MK_TextSprite.prototype.setNewLetterFlag = function(key, value) {
+	this._newLetterFlag[key] = value === undefined ? true : !!value;
+};
+MK_TextSprite.prototype.setTextSpriteFlag = function(key, value) {
+	this._textSpriteFlag[key] = value === undefined ? true : !!value;
+};
+MK_TextSprite.prototype.setTextSpriteData = function(key, value) {
+	this._textSpriteData[key] = value;
+};
+
+MK_TextSprite.prototype.animFlagFormat = function(key, code) {
+	return key + '_' + code;
+};
+
+MK_TextSprite.prototype.setNewLetterAnimFlag = function(key, code, value) {
+	//this.setNewLetterFlag(key + '_' + code, value);
+	this.setNewLetterFlag(this.animFlagFormat(key, code), value);
+};
+MK_TextSprite.prototype.setTextSpriteAnimFlag = function(key, code, value) {
+	//this.setTextSpriteFlag(key + '_' + code, value);
+	this.setTextSpriteFlag(this.animFlagFormat(key, code), value);
+};
+MK_TextSprite.prototype.setTextSpriteAnimData = function(key, code, value) {
+	//this.setTextSpriteData(key + '_' + code, value);
+	this.setTextSpriteData(this.animFlagFormat(key, code), value);
+};
+// ？TODO : 二级结构储存 ...
+
+MK_TextSprite.prototype.getLetterFlag = function(letter, key) {
+	return letter && letter.flag ? letter.flag[key] : false;
+};
+MK_TextSprite.prototype.getTextSpriteFlag = function(key) {
+	return this._textSpriteFlag[key];
+};
+MK_TextSprite.prototype.getTextSpriteData = function(key) {
+	return this._textSpriteData[key];
+};
+
+MK_TextSprite.prototype.getLetterAnimFlag = function(key, code) {
+	//return letter && letter.flag ? letter.flag[key + '_' + code] : false;
+	return letter && letter.flag ? letter.flag[this.animFlagFormat(key, code)] : false;
+};
+MK_TextSprite.prototype.getTextSpriteAnimFlag = function(key, code) {
+	//return this.getTextSpriteFlag(key + '_' + code);
+	return this.getTextSpriteFlag(this.animFlagFormat(key, code));
+};
+MK_TextSprite.prototype.getTextSpriteAnimData = function(key, code) {
+	//return this.getTextSpriteData(key + '_' + code);
+	return this.getTextSpriteData(this.animFlagFormat(key, code));
+};
 
 
+/*
 MK_TextSprite.prototype.setFlagAutoOn = function(code) {
 	//this.setTextSpriteFlag('auto' + '_' + code, true);
 	this.setTextSpriteAnimFlag('auto', code, true);
@@ -599,8 +695,43 @@ MK_TextSprite.prototype.setFlagAllowAddOff = function(code) {
 	this.setNewLetterAnimFlag('add', code, false);
 };
 */
-// 暂不
 
+// ？不耦合 textAnim ...
+// ？TextSprite 只提供设置和获取标志的方法 ...
+// ？但不提供设置具体动画相关的标志的方法 ...
+// ？这些标志 应由 SpriteAnimManager 设置和获取 ...
+// ？这些方法 应由 SpriteAnimManager 提供 ...
+// ？或者 交给 创建和使用 MK_TextSprite 的 Window_Message ...
+
+
+// --------------------------------
+// 获取字母对象数组
+
+MK_TextSprite.prototype.getLetterObjects = function() {
+	return this._letters;
+};
+MK_TextSprite.prototype.getLetterSprites = function() {
+	return this.getLetterObjects().map(obj => obj.sprite);
+};
+
+MK_TextSprite.prototype.filterLetterObjects = function(onFlags, offFlags) {
+	return this.getLetterObjects()
+		.filter(obj => {
+			if (!!onFlags) {
+				onFlags = Array.isArray(onFlags) ? onFlags : [onFlags];
+				for (var i = 0, l = onFlags.length; i < l; i++) {
+					if (!obj.flag[onFlags[i]]) return false;
+				}
+			}
+			if (!!offFlags) {
+				offFlags = Array.isArray(offFlags) ? offFlags : [offFlags];
+				for (var i = 0, l = offFlags.length; i < l; i++) {
+					if (!!obj.flag[offFlags[i]]) return false;
+				}
+			}
+			return true;
+		});
+};
 
 
 // --------------------------------
@@ -624,26 +755,27 @@ MK_TextSprite.prototype.setMsgWindow = function(msgWindow) {
 
 
 
-
+/*
 // ----------------------------------------------------------------
 // 修改 Window_Message
 
 (function() {
 
-var _MK_Window_Message__createAllParts   = Window_Message.prototype._createAllParts;
+const _MK_Window_Message__createAllParts = Window_Message.prototype._createAllParts;
 Window_Message.prototype._createAllParts = function() {
 	_MK_Window_Message__createAllParts.apply(this, arguments);
 	this._infoTextSprite = new MK_TextSprite();
 	this._windowContentsSprite.addChildAt(this._infoTextSprite, 0);
 };
 
-var _MK_Window_Message_createContents   = Window_Message.prototype.createContents;
+const _MK_Window_Message_createContents = Window_Message.prototype.createContents;
 Window_Message.prototype.createContents = function() {
 	_MK_Window_Message_createContents.apply(this, arguments);
 
 	var textBitmap = new MK_TextBitmap(this.contentsWidth(), this.contentsHeight());
 	textBitmap.setTextSprite(this._infoTextSprite);
 	textBitmap.textModeOn();
+	//textBitmap.textModeOff(); // ？默认关闭
 	this.contents = textBitmap;
 
     this.resetFontSettings();
@@ -654,7 +786,7 @@ Window_Message.prototype.createContents = function() {
 // TODO : 添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
 
 
-var _MK_Window_Message_startMessage   = Window_Message.prototype.startMessage;
+const _MK_Window_Message_startMessage = Window_Message.prototype.startMessage;
 Window_Message.prototype.startMessage = function() {
 	// 暂时
 	this._infoTextSprite.init();
@@ -668,7 +800,7 @@ Window_Message.prototype.startMessage = function() {
 // TODO : 关闭时 就清除
 
 
-var _MK_Window_Message_processEscapeCharacter   = Window_Message.prototype.processEscapeCharacter;
+const _MK_Window_Message_processEscapeCharacter = Window_Message.prototype.processEscapeCharacter;
 Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 	switch (code) {
 
@@ -747,7 +879,9 @@ Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 };
 
 })();
+*/
 
+// ？应交给 SpriteAnimManager ...
 
 
 

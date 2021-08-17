@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_SpriteAnimManager.js 精灵动画管理器
-// version : v0.2.0 2021/08/17 更新框架
+// version : v0.3.0-alpha 2021/08/18 更新框架 : TextSprite解耦
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.3.0-alpha 2021/08/18 更新框架 : TextSprite解耦
  *   v0.2.0.branch1 2021/08/17 清理冗余注释
  *   v0.2.0 2021/08/17 更新框架
  *     分离出 处理精灵动画播放效果的框架和所有的精灵动画类 作为新插件MKP_SpriteAnimationSet
@@ -43,12 +44,12 @@
  * ## 简要说明
  * 
  * 完成精灵动画功能的三个插件之一  
- * + 插件`MKP_SpriteAnimationSet`
- *   - 提供处理精灵动画播放的效果的类
- * + 插件`MKP_SpriteAnimManager`(本插件)
- *   - 用来设置动画和动画参数
  * + 插件`MKP_TextSprite`
- *   - 用来播放动画
+ *   - 支持播放动画
+ * + 插件`MKP_SpriteAnimationSet`
+ *   - 提供处理精灵动画播放的效果
+ * + 插件`MKP_SpriteAnimManager`(本插件)
+ *   - 用来设置动画和动画参数、处理消息框文字播放动画
  * 
  * 首先对动画进行配置，
  * 每个动画id可以指定一个基础动画，并且可以配置一组参数，操作详见 【插件指令】
@@ -71,10 +72,10 @@
  * 
  * ## 使用方法
  * 
- * 导入 完成精灵动画功能的三个插件  
+ * 按顺序导入 完成精灵动画功能的三个插件  
+ * + MKP_TextSprite
  * + MKP_SpriteAnimationSet
  * + MKP_SpriteAnimManager
- * + MKP_TextSprite
  * 
  * 使用插件参数或插件指令对动画进行设置，
  * 再使用 插件`MKP_TextSprite` 播放动画  
@@ -436,6 +437,7 @@ MK_SpriteAnimManager._baseAnimMapTable = [
 MK_SpriteAnimManager.getBaseMapTable = function() {
 	return this._baseAnimMapTable;
 };
+// 暂时不用
 
 // 用户映射表
 MK_SpriteAnimManager._userAnimMapping = [];
@@ -564,9 +566,8 @@ MK_SpriteAnimManager.getAnimParamByKey = function(code, key) {
 };
 
 
-
 // --------------------------------
-// 动画派生类列表
+// 创建文本动画对象
 
 // ？暂时通过储存每个动画派生类的code及其对应的类 ...
 // ？这样可以管理器通过code找到对应的类 ...
@@ -586,11 +587,140 @@ MK_SpriteAnimManager.createSpriteAnimByRealCode = function(code) {
 		return null;
 	}
 };
-
 MK_SpriteAnimManager.createSpriteAnim = function(code) {
 	var bCode = this.isUserMappingCode(code) ? this.getUserMapping(code) : code;
 	return this.createSpriteAnimByRealCode(bCode, code);
 };
+
+
+// --------------------------------
+// 储存文本动画对象
+
+MK_SpriteAnimManager._spriteAnimObjects = [];
+
+MK_SpriteAnimManager.addSpriteAnimObject = function(code) {
+	var spriteAnim = this.createSpriteAnim(code);
+	this._spriteAnimObjects[code] = spriteAnim;
+	// TODO : 考虑 占用同一 code 的问题
+	return spriteAnim;
+};
+
+MK_SpriteAnimManager.getSpriteAnimObject = function(code) {
+	return this._spriteAnimObjects[code];
+};
+
+
+// --------------------------------
+// 清除文本动画对象
+
+MK_SpriteAnimManager.clearSpriteAnimObject = function(code) {
+	this._spriteAnimObjects[code] = null;
+};
+MK_SpriteAnimManager.clearAllSpriteAnimObject = function() {
+	this._spriteAnimObjects.splice(0);
+};
+
+MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite = function(textSprite) {
+	!!textSprite && this._spriteAnimObjects.forEach(function(spriteAnim, code) {
+		if (textSprite.getTextSpriteAnimFlag('anim', code)) {
+			this.clearSpriteAnimObject(code);
+		}
+	}, this);
+};
+
+
+// --------------------------------
+// 精灵动画目标
+
+// 添加新动画对象时，为其初始化字母精灵目标
+MK_SpriteAnimManager.initSpriteAnimTarget = function(spriteAnim, code, textSprite) {
+	if (spriteAnim) {
+		textSprite.filterLetterObjects(textSprite.animFlagFormat('add', code))
+			.forEach(letterObj => spriteAnim.addTarget(letterObj.sprite, letterObj.data));
+	}
+};
+
+// 添加新字母精灵时，为每个动画对象检查并添加字母精灵目标
+MK_SpriteAnimManager.addNewSpriteAnimTarget = function(textSprite, letterObj) {
+	this._spriteAnimObjects.forEach(
+		function(spriteAnim, code) {
+			if (spriteAnim) {
+				var key = textSprite.animFlagFormat('add', code);
+				if (letterObj.flag[key]) {
+					spriteAnim.addTarget(letterObj.sprite, letterObj.data);
+				}
+			}
+		}, this);
+};
+
+(function() {
+
+const _MK_MK_TextSprite_onAddLetterSprite = MK_TextSprite.prototype.onAddLetterSprite;
+MK_TextSprite.prototype.onAddLetterSprite = function(letterObj) {
+	_MK_MK_TextSprite_onAddLetterSprite.apply(this, arguments);
+	MK_SpriteAnimManager.addNewSpriteAnimTarget(this, letterObj);
+};
+
+})();
+
+
+// --------------------------------
+// update
+
+//MK_SpriteAnimManager.updateSpriteAnimtions = function() {
+//	this._spriteAnimObjects.forEach(
+//		spriteAnim => spriteAnim && spriteAnim.update());
+//};
+
+MK_SpriteAnimManager.updateSpriteAnimtions = function(textSprite) {
+	this.updateSpriteAnimtionsSetStatus(textSprite);
+	this.updateSpriteAnimtionsFrameUpdate(textSprite);
+};
+
+MK_SpriteAnimManager.updateSpriteAnimtionsFrameUpdate = function(textSprite) {
+	this._spriteAnimObjects.forEach(function(spriteAnim, code) {
+		if (spriteAnim && textSprite.getTextSpriteAnimFlag('anim', code)) {
+			spriteAnim.update();
+		}
+	});
+};
+
+MK_SpriteAnimManager.updateSpriteAnimtionsSetStatus = function(textSprite) {
+	this._spriteAnimObjects.forEach(function(spriteAnim, code) {
+		//if (spriteAnim) {
+		if (spriteAnim && textSprite.getTextSpriteAnimFlag('anim', code)) {
+			[
+				'Play', 
+				'Pause', 
+				'Continue', 
+				'Stop', 
+				'Init', 
+			].forEach(flag => {
+				if (textSprite.getTextSpriteAnimFlag(flag.toLowerCase(), code)) {
+					spriteAnim.setAnimFlagOn(flag);
+					textSprite.setTextSpriteAnimFlag(flag.toLowerCase(), code, false)
+				}
+			})
+		}
+	}, this);
+
+	// ？和 精灵动画 SpriteAnim 耦合 ...
+	// TODO : ？想办法 解耦 ...
+};
+
+// TODO : 想个办法 让 textsprite 使用的 动画不重复 ...
+// ？动画不储存在 MK_SpriteAnimManager 里 ...
+
+// ？因为 消息结束时 会清除动画 ...
+// ？所以 如果只在 消息框里使用文本动画 且只有一个消息框的话 就不会有重复使用动画的问题 ...
+
+// TODO : 再整理框架
+
+// TODO : 清除动画
+
+
+MK_Plugins.class['MK_SpriteAnimManager'] = MK_SpriteAnimManager;
+
 
 
 
@@ -599,7 +729,7 @@ MK_SpriteAnimManager.createSpriteAnim = function(code) {
 
 (function () {
 
-var _MK_Game_Interpreter_pluginCommand   = Game_Interpreter.prototype.pluginCommand;
+const _MK_Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
 Game_Interpreter.prototype.pluginCommand = function (command, args) {
 	_MK_Game_Interpreter_pluginCommand.apply(this, arguments);
 
@@ -648,7 +778,7 @@ Game_Interpreter.prototype.pluginCommand = function (command, args) {
 (function() {
 
 // 制作保存内容
-var _MK_DataManager_makeSaveContents = DataManager.makeSaveContents;
+const _MK_DataManager_makeSaveContents = DataManager.makeSaveContents;
 DataManager.makeSaveContents = function() {
     var contents = _MK_DataManager_makeSaveContents.apply(this, arguments);
     contents.MK_SpriteAnimManager_UAnim = MK_SpriteAnimManager._userAnimMapping;
@@ -657,7 +787,7 @@ DataManager.makeSaveContents = function() {
 };
 
 // 提取保存内容
-var _MK_DataManager_extractSaveContents = DataManager.extractSaveContents;
+const _MK_DataManager_extractSaveContents = DataManager.extractSaveContents;
 DataManager.extractSaveContents = function(contents) {
     _MK_DataManager_extractSaveContents.apply(this, arguments);
     MK_SpriteAnimManager._userAnimMapping = contents.MK_SpriteAnimManager_UAnim || [];
@@ -692,6 +822,238 @@ DataManager.extractSaveContents = function(contents) {
 			}
 		});
 	});
+
+})();
+
+
+
+
+// ----------------------------------------------------------------
+// 修改 Window_Message
+
+(function() {
+
+const _MK_Window_Message__createAllParts = Window_Message.prototype._createAllParts;
+Window_Message.prototype._createAllParts = function() {
+	_MK_Window_Message__createAllParts.apply(this, arguments);
+	this._infoTextSprite = new MK_TextSprite();
+	this._windowContentsSprite.addChildAt(this._infoTextSprite, 0);
+};
+
+const _MK_Window_Message_createContents = Window_Message.prototype.createContents;
+Window_Message.prototype.createContents = function() {
+	_MK_Window_Message_createContents.apply(this, arguments);
+
+	var textBitmap = new MK_TextBitmap(this.contentsWidth(), this.contentsHeight());
+	textBitmap.setTextSprite(this._infoTextSprite);
+	textBitmap.textModeOn();
+	//textBitmap.textModeOff(); // ？默认关闭
+	this.contents = textBitmap;
+
+    this.resetFontSettings();
+
+    // 改变了 this.contents.drawText
+};
+
+// TODO : 添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
+
+
+const _MK_Window_Message_update = Window_Message.prototype.update;
+Window_Message.prototype.update = function() {
+	_MK_Window_Message_update.apply(this, arguments);
+	//MK_SpriteAnimManager.updateSpriteAnimtions();
+	MK_SpriteAnimManager.updateSpriteAnimtions(this._infoTextSprite);
+	// TODO : windowMessage 的 textsprite 进行更新 且只更新自己的动画对象 ...
+};
+
+// ？TODO : 面向对象 ...
+
+
+const _MK_Window_Message_startMessage = Window_Message.prototype.startMessage;
+Window_Message.prototype.startMessage = function() {
+	// 暂时
+	//this._infoTextSprite.init();
+	//this._infoTextSprite.clearAll();
+
+	// 把 messageWindow 的 textState 给他
+	this._infoTextSprite.setMsgWindow(this);
+
+	_MK_Window_Message_startMessage.apply(this, arguments);
+};
+
+
+// TODO : 关闭时 就清除
+
+const _MK_Window_Message_updateClose = Window_Message.prototype.updateClose;
+Window_Message.prototype.updateClose = function() {
+	var noColsed = !this.isClosed();
+	_MK_Window_Message_updateClose.apply(this, arguments);
+	if (noColsed && this.isClosed()) {
+		// 之前未完全关闭 现在完全关闭了
+		MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
+		this._infoTextSprite.clearAll();
+		//MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
+		// ？要先清除 文本动画对象 在清除 文本精灵的标记 ...
+		// TODO : 清除方法 交给 this._infoTextSprite 执行
+	}
+};
+
+
+
+const _MK_Window_Message_processEscapeCharacter = Window_Message.prototype.processEscapeCharacter;
+Window_Message.prototype.processEscapeCharacter = function(code, textState) {
+	switch (code) {
+
+	// 消息中的obtainEscapeCode获取到的字母是大写字母，且是纯字母
+
+	case 'TEXTANIM': // create text anim
+		var param = this.obtainEscapeParam(textState);
+		var code = param || 0;
+		//this._infoTextSprite.addTextAnimByCode(code);
+		var spriteAnim = MK_SpriteAnimManager.addSpriteAnimObject(code);
+		MK_SpriteAnimManager.initSpriteAnimTarget(spriteAnim, code, this._infoTextSprite);
+		// TODO : 可以从 spriteAnim 获取 code
+		this.textAnim_setFlagAllowAddOn(code); // 默认开启
+		this.textAnim_setAnimFlagOn(code);
+		break;
+
+	case 'TAPLAY': // text anim play
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagPlayOn(param || 0);
+		this.textAnim_setFlagPlayOn(param || 0);
+		break;
+	case 'TAPAUSE': // text anim pause
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagPauseOn(param || 0);
+		this.textAnim_setFlagPauseOn(param || 0);
+		break;
+	case 'TACONT': // text anim continue
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagContinueOn(param || 0);
+		this.textAnim_setFlagContinueOn(param || 0);
+		break;
+	case 'TASTOP': // text anim stop
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagStopOn(param || 0);
+		this.textAnim_setFlagStopOn(param || 0);
+		break;
+
+	case 'TAADDON': // text anim add(allow add) on
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagAllowAddOn(param || 0);
+		this.textAnim_setFlagAllowAddOn(param || 0);
+		break;
+	case 'TAADDOFF': // text anim add(allow add) off
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagAllowAddOff(param || 0);
+		this.textAnim_setFlagAllowAddOff(param || 0);
+		break;
+
+	case 'TAACTON': // text anim active(enabled) on
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagEnabledOn(param || 0);
+		this.textAnim_setFlagEnabledOn(param || 0);
+		break;
+	case 'TAACTOFF': // text anim active(enabled) off
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagEnabledOff(param || 0);
+		this.textAnim_setFlagEnabledOff(param || 0);
+		break;
+	// 未使用
+
+	// TODO : 在消息窗口中设置动画参数
+	// ？调用多次 obtainEscapeParam 可以从 \XXX[12][34] 中获取多个纯数值参数 ...
+	// ？以此 可以指定 anim code 和 param index 但不方便指定参数值 ..
+	// ？可以提前在用户参数的其他闲置的索引位设置值，再在消息中把某个索引位的参数复制到另一位位置 ...
+	// ？即 使用 \XX[1][2][3] 把animcode=1的参数2设置为参数3的值 ...
+
+
+	//case 'RCV': case 'REC': // recover
+	//	var param = this.obtainEscapeParam(textState);
+	//	// ？是否有必要 ...
+	//	// ？缺省时找不到[..]，不会修改textState.index ...
+	//	this._infoTextSprite.recoverAllLetter();
+	//	break;
+
+	/*
+	case 'MVX': // moveY / offsetX
+		var param = this.obtainEscapeParam(textState);
+		// TODO : ...
+		break;
+
+	case 'MVY': // moveY / offsetY
+		var param = this.obtainEscapeParam(textState);
+		// TODO : ...
+		break;
+	*/
+
+	default:
+		_MK_Window_Message_processEscapeCharacter.apply(this, arguments);
+		break;
+	}
+
+	// TODO : 全部动画效果复原
+};
+
+
+//MK_SpriteAnimManager.prototype.textAnim_setFlagAutoOn = function(code) {
+//	//this.setTextSpriteFlag('auto' + '_' + code, true);
+//	this.setTextSpriteAnimFlag('auto', code, true);
+//};
+//MK_SpriteAnimManager.prototype.setFlagAutoOff = function(code) {
+//	//this.setTextSpriteFlag('auto' + '_' + code, false);
+//	this.setTextSpriteAnimFlag('auto', code, false);
+//};
+Window_Message.prototype.textAnim_setFlagAutoOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('auto', code, true);
+};
+Window_Message.prototype.textAnim_setFlagAutoOff = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('auto', code, false);
+};
+
+Window_Message.prototype.textAnim_setFlagPlayOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('play', code, true);
+};
+Window_Message.prototype.textAnim_setFlagPauseOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('pause', code, true);
+};
+Window_Message.prototype.textAnim_setFlagContinueOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('continue', code, true);
+};
+Window_Message.prototype.textAnim_setFlagStopOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('stop', code, true);
+};
+
+Window_Message.prototype.textAnim_setFlagInitOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('init', code, true);
+};
+//Window_Message.prototype.textAnim_setFlagInitOff = function(code) {
+//	this._infoTextSprite.setTextSpriteAnimFlag('init', code, false);
+//};
+
+Window_Message.prototype.textAnim_setFlagEnabledOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('enabled', code, true);
+};
+Window_Message.prototype.textAnim_setFlagEnabledOff = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('enabled', code, false);
+};
+// ？未使用
+
+Window_Message.prototype.textAnim_setAnimFlagOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('anim', code, true);
+};
+//Window_Message.prototype.textAnim_setAnimFlagOff = function(code) {
+//	this._infoTextSprite.setTextSpriteAnimFlag('anim', code, false);
+//};
+// ？不建议 取消标记 anim ...
+// ？防止创建 anim 后 无法及时清除 ...
+
+Window_Message.prototype.textAnim_setFlagAllowAddOn = function(code) {
+	this._infoTextSprite.setNewLetterAnimFlag('add', code, true);
+};
+Window_Message.prototype.textAnim_setFlagAllowAddOff = function(code) {
+	this._infoTextSprite.setNewLetterAnimFlag('add', code, false);
+};
 
 })();
 
