@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_TextSprite.js 文本精灵
-// version : v0.1.0.fix1 2020/11/14 修复绘制文字不会同步字体的问题
+// version : v0.1.2 2021/08/17 更新MKP_SpriteAnimManager的框架 相应地更新插件说明
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -17,11 +17,14 @@
 // ================================================================
 
 
+
+
 /*:
  * @plugindesc 文本精灵 <MKP_TextSprite>
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.1.2 2021/08/17 更新MKP_SpriteAnimManager的框架 相应地更新插件说明
  *   v0.1.1 2021/08/16 更新插件说明及规约
  *   v0.1.0.fix1 2020/11/14 修复绘制文字不会同步字体的问题
  *   v0.1.0 2020/11/11 完成基本框架和功能的demo
@@ -38,8 +41,13 @@
  * 
  * ## 简要说明
  * 
- * 本插件`MKP_TextSprite`用来播放动画  
- * 设置动画和动画参数由另一个插件`MKP_SpriteAnimManager`负责  
+ * 完成精灵动画功能的三个插件之一  
+ * + 插件`MKP_SpriteAnimationSet`
+ *   - 提供处理精灵动画播放的效果的类
+ * + 插件`MKP_SpriteAnimManager`
+ *   - 用来设置动画和动画参数
+ * + 插件`MKP_TextSprite`(本插件)
+ *   - 用来播放动画
  * 
  * 首先对动画进行配置，详细操作见 插件`MKP_SpriteAnimManager`  
  * 之后在编辑消息时，使用特殊字串触发一些播放动画的操作，
@@ -48,6 +56,11 @@
  * 
  * 
  * ## 使用方法
+ * 
+ * 导入 完成精灵动画功能的三个插件  
+ * + MKP_SpriteAnimationSet
+ * + MKP_SpriteAnimManager
+ * + MKP_TextSprite
  * 
  * 在【显示文本】之前，需要设置动画，详见 插件`MKP_SpriteAnimManager`  
  * 之后在【显示文本】里编辑消息时，使用控制字符触发操作，详见 【控制字符】  
@@ -131,7 +144,7 @@
  * 
  * ## 其他说明
  * 
- * #### 动画列表，详细说明和参数见插件`MKP_SpriteAnimManager`
+ * #### 动画列表，详细说明和参数见插件`MKP_SpriteAnimationSet`
  * 注 : id 为 默认动画id  
  * | id | 动画效果 |
  * | :- | :------- |
@@ -300,7 +313,9 @@ MK_TextBitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, al
 		//this._textSprite._letters.push(sprite);
 		//this._textSprite.addChild(sprite);
 		// FINISH : this._textSprite.addTextSprite(sprite);
-		this._textSprite.addLetterSprite(sprite);
+		//this._textSprite.addLetterSprite(sprite);
+
+		this._textSprite.addLetterSprite(sprite, text, x, y);
 	}
 	else {
 		Bitmap.prototype.drawText.apply(this, arguments);
@@ -400,12 +415,34 @@ MK_TextSprite.prototype.addLetterSprite = function(sprite) {
 
 	this.addChild(sprite);
 };
-
 MK_TextSprite.prototype.addTextAnimTarget = function(sprite) {
 	this._textAnimList.forEach(function(textAnim) {
 		textAnim.addTarget(sprite);
 	}, this);
 };
+
+/*
+MK_TextSprite.prototype.addLetterSprite = function(sprite, text, x, y) {
+	if (!sprite) return ;
+
+	//this.addTextAnimTarget(sprite);
+
+	//this._letters.push(sprite);
+	this._letters.push({
+		sprite : sprite, 
+		text : text || '', 
+		x : x === undefined ? sprite.x : x, 
+		y : y === undefined ? sprite.y : y, 
+		//flag : {}, 
+		flag : Object.assign({}, this._newLetterFlag), 
+	});
+
+	//this.initLetter(sprite); // TODO
+
+	this.addChild(sprite);
+};
+*/
+
 
 
 // --------------------------------
@@ -418,6 +455,8 @@ MK_TextSprite.prototype.initTextAnimList = function() {
 MK_TextSprite.prototype.getTextAnim = function(code) {
 	return this._textAnimList[code];
 };
+
+// ？不再 耦合 textAnim ...
 
 
 // --------------------------------
@@ -439,6 +478,8 @@ MK_TextSprite.prototype.addTextAnimByCode = function(code) {
 	!!textAnim && this.addTextAnim(textAnim);
 };
 
+// ？不再 耦合 textAnim ...
+
 
 // --------------------------------
 // update
@@ -453,6 +494,8 @@ MK_TextSprite.prototype.updateTextAnim = function() {
 		!!textAnim && textAnim.update();
 	}, this);
 };
+
+// ？不再 耦合 textAnim ...
 
 
 // --------------------------------
@@ -523,6 +566,97 @@ MK_TextSprite.prototype.setFlagAllowAddOff = function(code) {
 	!!textAnim && textAnim.setFlagAllowAddOff();
 };
 
+// ？解耦 ...
+// ？文本精灵 不应该 与动画和动画管理器 耦合 ...
+// ？这样 文本精灵 才可以做到更多的功能 比如 调整整体位置使得居中等 ...
+// ？...
+
+// ？播放动画、暂停动画、是否添加动画、添加的动画 等等的设置 都可以 归类为 设置标志 ...
+// ？所以 可以把这些状态都放在一起 当做 动画的状态 或 文本精灵的状态 ...
+
+// ？原本 设置的是 动画对象 的 播放、暂停、添加 等标志 ...
+// ？现在把这些标志放在 文本精灵的单个字母精灵里 ...
+// ？...
+
+/*
+// --------------------------------
+// 设置标志
+
+MK_TextSprite.prototype.setNewLetterFlag = function(key, value) {
+	this._newLetterFlag[key] = value === undefined ? true : !!value;
+};
+MK_TextSprite.prototype.setTextSpriteFlag = function(key, value) {
+	this._textSpriteFlag[key] = value === undefined ? true : !!value;
+};
+
+MK_TextSprite.prototype.setNewLetterAnimFlag = function(key, code, value) {
+	this.setNewLetterFlag(key + '_' + code, value);
+};
+MK_TextSprite.prototype.setTextSpriteAnimFlag = function(key, code, value) {
+	this.setTextSpriteFlag(key + '_' + code, value);
+};
+
+MK_TextSprite.prototype.clearNewLetterFlag = function() {
+	this._newLetterFlag = {};
+};
+MK_TextSprite.prototype.clearTextSpriteFlag = function() {
+	this._textSpriteFlag = {};
+};
+
+
+MK_TextSprite.prototype.setFlagAutoOn = function(code) {
+	//this.setTextSpriteFlag('auto' + '_' + code, true);
+	this.setTextSpriteAnimFlag('auto', code, true);
+};
+MK_TextSprite.prototype.setFlagAutoOff = function(code) {
+	//this.setTextSpriteFlag('auto' + '_' + code, false);
+	this.setTextSpriteAnimFlag('auto', code, false);
+};
+
+MK_TextSprite.prototype.setFlagPlayOn = function(code) {
+	this.setTextSpriteAnimFlag('play', code, true);
+};
+MK_TextSprite.prototype.setFlagPauseOn = function(code) {
+	this.setTextSpriteAnimFlag('pause', code, true);
+};
+MK_TextSprite.prototype.setFlagContinueOn = function(code) {
+	this.setTextSpriteAnimFlag('continue', code, true);
+};
+MK_TextSprite.prototype.setFlagStopOn = function(code) {
+	this.setTextSpriteAnimFlag('stop', code, true);
+};
+
+MK_TextSprite.prototype.setFlagInitOn = function(code) {
+	this.setTextSpriteAnimFlag('init', code, true);
+};
+MK_TextSprite.prototype.setFlagInitOff = function(code) {
+	this.setTextSpriteAnimFlag('init', code, false);
+};
+
+MK_TextSprite.prototype.setFlagEnabledOn = function(code) {
+	this.setTextSpriteAnimFlag('enabled', code, true);
+};
+MK_TextSprite.prototype.setFlagEnabledOff = function(code) {
+	this.setTextSpriteAnimFlag('enabled', code, false);
+};
+
+MK_TextSprite.prototype.setAnimFlagOn = function(code) {
+	this.setTextSpriteAnimFlag('anim', code, true);
+};
+MK_TextSprite.prototype.setAnimFlagOff = function(code) {
+	this.setTextSpriteAnimFlag('anim', code, false);
+};
+
+MK_TextSprite.prototype.setFlagAllowAddOn = function(code) {
+	this.setNewLetterAnimFlag('add', code, true);
+};
+MK_TextSprite.prototype.setFlagAllowAddOff = function(code) {
+	this.setNewLetterAnimFlag('add', code, false);
+};
+*/
+// 暂不
+
+
 
 // --------------------------------
 // 还原letter
@@ -562,9 +696,15 @@ var _MK_Window_Message_createContents   = Window_Message.prototype.createContent
 Window_Message.prototype.createContents = function() {
 	_MK_Window_Message_createContents.apply(this, arguments);
 
-    this.contents = new MK_TextBitmap(this.contentsWidth(), this.contentsHeight());
-	this.contents.setTextSprite(this._infoTextSprite);
-	this.contents.textModeOn();
+    //this.contents = new MK_TextBitmap(this.contentsWidth(), this.contentsHeight());
+	//this.contents.setTextSprite(this._infoTextSprite);
+	//this.contents.textModeOn();
+
+	var textBitmap = new MK_TextBitmap(this.contentsWidth(), this.contentsHeight());
+	textBitmap.setTextSprite(this._infoTextSprite);
+	textBitmap.textModeOn();
+	this.contents = textBitmap;
+
     this.resetFontSettings();
 
     // 改变了 this.contents.drawText
