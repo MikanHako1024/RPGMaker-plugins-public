@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.1.2.branch1 2021/08/17 清理冗余注释
  *   v0.1.2 2021/08/17 更新MKP_SpriteAnimManager的框架 相应地更新插件说明
  *   v0.1.1 2021/08/16 更新插件说明及规约
  *   v0.1.0.fix1 2020/11/14 修复绘制文字不会同步字体的问题
@@ -248,72 +249,29 @@ MK_TextBitmap.prototype.needTextMode = function() {
 };
 
 
-// 最终手段1，修改bitmap._context
-
-// 最终手段2，修改bitmap.drawText
-//MK_TextBitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, align, targetContext) {
-//};
-
-
 MK_TextBitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, align) {
 	if (this.needTextMode()) {
-		//var bitmap = new Bitmap(maxWidth, lineHeight);
-		// ？drawTextEx给的maxWidth 是measureTextWidth的2倍 ...
-		// ？但是textState增加的宽 是measureTextWidth的1倍 ...
-
-
-		//var bitmap = new Bitmap(this.measureTextWidth(text), lineHeight);
-		// ？需要把原bitmap(即MK_TextBitmap)的配置给新bitmap ...
-
-		//var bitmap = Object.create(this);
-		//bitmap.textModeOff();
-		//bitmap.resize(this.measureTextWidth(text), lineHeight);
-		// ？不行，使用 Object.create 存在问题 ...
-		// ？改 复制原bitmap配置 为 使用原bitmap进行绘画 ...
-
 		var bitmap = new Bitmap(this.measureTextWidth(text), lineHeight);
 
-		// ？TODO : 还要考虑文字阴影，所以要加宽一点，同时偏移绘画位置 ...
-
+		// TODO : 还要考虑文字阴影，所以要加宽一点，同时偏移绘画位置
 
 		var sprite = new Sprite(bitmap);
 		sprite.x = x;
 		sprite.y = y;
 
-		// ？把 this 的全部数据 搬到 bitmap ...
-		// ？或者 换canvas ...
-		// ？这里选择后者 ...
-		//bitmap.drawText(text, 0, 0, maxWidth, lineHeight, align);
+		// 替换canvas 这样就不需要复制bitmap的配置了
 		var canvas = this._canvas;
 		var context = this._context;
 
-		//this._canvas = bitmap._canvas;
-		//this._context = bitmap._context;
-		// ？设置无效 ...
-		// ？_canvas, _context 是 定义的get方法，且没有 set方法 ...
-		// ？实际的属性名是 __canvas, __context ...
 		this.__canvas = bitmap._canvas;
 		this.__context = bitmap._context;
 
-		//bitmap.drawText(text, 0, 0, maxWidth, lineHeight, align);
 		this.textModeOff();
 		this.drawText(text, 0, 0, maxWidth, lineHeight, align);
 		this.textModeOn(); // 这里当做之前一定是on状态，所以还原时直接on了
 
-		//this._canvas = canvas;
-		//this._context = context;
 		this.__canvas = canvas;
 		this.__context = context;
-
-
-		//if (!this._textSprite._letters) {
-		//	this._textSprite._letters = [];
-		//}
-		// 检查也放进 addLetterSprite
-		//this._textSprite._letters.push(sprite);
-		//this._textSprite.addChild(sprite);
-		// FINISH : this._textSprite.addTextSprite(sprite);
-		//this._textSprite.addLetterSprite(sprite);
 
 		this._textSprite.addLetterSprite(sprite, text, x, y);
 	}
@@ -323,11 +281,6 @@ MK_TextBitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, al
 };
 
 MK_TextBitmap.prototype.clearTextSprite = function() {
-	//this._textSprite._letters && this._textSprite._letters.forEach(function(s) {
-	//	this.removeChild(s);
-	//}, this._textSprite);
-	//this._textSprite._letters = [];
-	// FINISH : this._textSprite.clearLetters();
 	this._textSprite.clearLetters();
 };
 
@@ -371,8 +324,6 @@ MK_TextSprite.prototype.initialize = function() {
 };
 
 MK_TextSprite.prototype.init = function() {
-	//this.initialize.apply(this, arguments);
-	// ？再执行 Sprite.prototype.initialize 会报错 ...
 	this.bitmap = null;
 
 	// 文字精灵列表
@@ -396,7 +347,7 @@ MK_TextSprite.prototype.initLetterList = function() {
 MK_TextSprite.prototype.clearLetters = function() {
 	this._letters = [];
 	this.removeChildren();
-	// ？TODO : 只移除letters中的sprite 还是 全部移除 ...
+	// TODO : 只移除letters中的sprite 还是 全部移除
 };
 
 
@@ -404,10 +355,6 @@ MK_TextSprite.prototype.clearLetters = function() {
 // 添加文字精灵
 
 MK_TextSprite.prototype.addLetterSprite = function(sprite) {
-	//if (!this._letters) {
-	//	this._letters = [];
-	//}
-
 	this.addTextAnimTarget(sprite);
 
 	this._letters.push(sprite);
@@ -463,8 +410,6 @@ MK_TextSprite.prototype.getTextAnim = function(code) {
 // 添加文本动画
 
 MK_TextSprite.prototype.addTextAnim = function(textAnim) {
-	//this._textAnimList.push(textAnim);
-	// ？改用code作为索引，方便找到动画实例 ...
 	this._textAnimList[textAnim.getAnimCode()] = textAnim;
 	textAnim.setTargets(this._letters);
 };
@@ -696,10 +641,6 @@ var _MK_Window_Message_createContents   = Window_Message.prototype.createContent
 Window_Message.prototype.createContents = function() {
 	_MK_Window_Message_createContents.apply(this, arguments);
 
-    //this.contents = new MK_TextBitmap(this.contentsWidth(), this.contentsHeight());
-	//this.contents.setTextSprite(this._infoTextSprite);
-	//this.contents.textModeOn();
-
 	var textBitmap = new MK_TextBitmap(this.contentsWidth(), this.contentsHeight());
 	textBitmap.setTextSprite(this._infoTextSprite);
 	textBitmap.textModeOn();
@@ -713,73 +654,23 @@ Window_Message.prototype.createContents = function() {
 // TODO : 添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
 
 
-/*
-var _MK_Window_Message__updatePauseSign   = Window_Message.prototype._updatePauseSign;
-Window_Message.prototype._updatePauseSign = function() {
-	_MK_Window_Message__updatePauseSign.apply(this, arguments);
-	if (this._hidePauseSign) {
-		this._windowPauseSignSprite.visible = false;
-	}
-};
-*/
-
-
 var _MK_Window_Message_startMessage   = Window_Message.prototype.startMessage;
 Window_Message.prototype.startMessage = function() {
 	// 暂时
-	//this._infoTextSprite.clearEffect();
-	//this._infoTextSprite.clear();
 	this._infoTextSprite.init();
 
 	// 把textState给他
-	//this._infoTextSprite.setTextState(this._textState);
-	// ？此时还没有 _textState ...
-	// ？直接把window_message(this)给他 ...
 	this._infoTextSprite.setMsgWindow(this);
-
-	/*
-	// 暂时
-	this._hidePauseSign = false;
-	//this._autoEnd = false;
-	*/
 
 	_MK_Window_Message_startMessage.apply(this, arguments);
 };
 
-// ？TODO : 关闭时 就清除 ...
+// TODO : 关闭时 就清除
 
 
 var _MK_Window_Message_processEscapeCharacter   = Window_Message.prototype.processEscapeCharacter;
 Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 	switch (code) {
-
-	/*
-	//case 'Fon':
-	// ？需要大写 ...
-	case 'FON': // flag on
-		var param = this.obtainEscapeParam(textState);
-		//this.setAnimFlagOn(param);
-		this._infoTextSprite.setAnimFlagOn(param);
-		break;
-
-	case 'FOFF': // flag off
-		var param = this.obtainEscapeParam(textState);
-		//this.setAnimFlagOff(param);
-		this._infoTextSprite.setAnimFlagOff(param);
-		break;
-
-	case 'AON': // anim effect on
-		var param = this.obtainEscapeParam(textState);
-		//this.setAnimEffectOn(param);
-		this._infoTextSprite.setAnimEffectOn(param);
-		break;
-
-	case 'AOFF': // anim effect off
-		var param = this.obtainEscapeParam(textState);
-		//this.setAnimEffectOff(param);
-		this._infoTextSprite.setAnimEffectOff(param);
-		break;
-	*/
 
 	// 消息中的obtainEscapeCode获取到的字母是大写字母，且是纯字母
 
@@ -830,76 +721,6 @@ Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 	// ？即 使用 \XX[1][2][3] 把animcode=1的参数2设置为参数3的值 ...
 
 
-	/*
-	//case 'SKIPON': // skip on
-	//	this._showFast = true;
-	//case 'SKIPOFF': // skip off
-	//	this._showFast = false;
-	// ？改 使用两种标识 对应 开启跳过和关闭跳过 ...
-	// ？为 使用同一标识的不同参数 对应 开启跳过和关闭跳过 ...
-	//case 'SKIP': // skip
-	// ？改名为 fast，因为之后有跳过功能 ...
-	//case 'FAST': // fast
-	//	var param = this.obtainEscapeParam(textState);
-	//	if (!!param) this._showFast = true;
-	//	else this._showFast = false;
-	//	break;
-	// ？可以通过 _lineShowFast 控制是否需要文字结束后的等待 ...
-	// ？而原版下 有标识 <, > 可以 分别设置_lineShowFast为false,true ...
-
-	//case 'CURSOR': // cursor
-	// ？不是 cursor 而是 pauseSign ...
-	case 'PSIGN': // pauseSign
-		var param = this.obtainEscapeParam(textState);
-		//if (!!param) this._windowCursorSprite.visible = true;
-		//else this._windowCursorSprite.visible = false;
-		// ？update方法中 会修改其opacity(同alpha) 和 visible 以实现闪烁效果 ...
-		// ？所以需要扩展方法 ...
-		//if (!!param) this._hideCursor = false;
-		//else this._hideCursor = true;
-		// ？不是 cursor 而是 pauseSign ...
-		if (!!param) this._hidePauseSign = false;
-		else this._hidePauseSign = true;
-		break;
-
-
-	//case 'WAIT': // wait
-	//	var param = this.obtainEscapeParam(textState);
-	//	this.startWait(param);
-	//	break;
-	// 暂时移除wait功能
-
-
-	//case 'NEXT': // next
-	// ？自动下一句话 即是跳过最后的等待 即是设置pause为false ...
-	// ？可以顺便添加一个设置pause为true的功能 ...
-	/*
-	case 'PAUSE': // pause
-		var param = this.obtainEscapeParam(textState);
-		if (!!param) this.pause = true;
-		else this.pause = false;
-		break;
-	* /
-	// ？在结尾 加\pause[0] 不能实现 取消等待 ...
-	// ？因为在处理完该字符后仍然会进行暂停 ...
-	//case 'NEXT': // next
-	// ？把 直接跳过 扩展为 跳过多少字 ...
-	//case 'SKIP': // skip
-	//	var param = this.obtainEscapeParam(textState);
-	//	textState.index += param;
-	//	break;
-	// ？仍然不能实现跳过结尾的等待 ...
-	// ？所以暂时移除skip功能 ...
-
-	//case 'ATEND': // auto end
-	//	this._autoEnd = true;
-	//	break;
-	// ？可以通过 _pauseSkip 控制是否需要文字结束后的等待 ...
-	// ？而原版下 有标识 ^ 可以 设置_pauseSkip为true ...
-	*/
-	// ？独立功能，移动到另一个插件MK_MoreMsgSymbol里 ...
-
-
 	//case 'RCV': case 'REC': // recover
 	//	var param = this.obtainEscapeParam(textState);
 	//	// ？是否有必要 ...
@@ -924,8 +745,6 @@ Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 
 	// TODO : 全部动画效果复原
 };
-
-
 
 })();
 

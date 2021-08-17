@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.1.0.branch1 2021/08/17 清理冗余注释
  *   v0.1.0 2021/08/17 最初的版本
  *     从MKP_SpriteAnimManager中分离出 处理精灵动画播放效果的框架和所有的精灵动画类
  *   v0.0.0 2019/01/02 项目计划中
@@ -388,24 +389,13 @@ MK_SpriteAnimBase.prototype.initAnimCode = function(code) {
 
 MK_SpriteAnimBase.prototype.setTargets = function(sprites) {
 	if (!Array.isArray(sprites)) sprites = [sprites];
-	//this._targets = sprites;
 	this.initTargets();
 	sprites.forEach(function(s) {
 		this.addTarget(s);
 	}, this);
 };
-//MK_SpriteAnimBase.prototype.setTarget = function(sprite, index) {
-//	if (typeof index == 'number') {
-//		this._targets[index] = sprite;
-//	}
-//	else {
-//		//this._targets[index].push(sprite);
-//		this._targets[0] = sprite;
-//	}
-//};
 
 MK_SpriteAnimBase.prototype.getTargets = function() {
-	//return this._targets;
 	return this._targets || [];
 };
 MK_SpriteAnimBase.prototype.getTarget = function(index) {
@@ -447,8 +437,6 @@ MK_SpriteAnimBase.prototype.createTargetObj = function(sprite) {
 
 MK_SpriteAnimBase.prototype.addTarget = function(sprite) {
 	if (this._flagAllowAdd) {
-		//this.onAddTarget(sprite);
-		//this._targets.push(sprite);
 		var targetObj = this.createTargetObj(sprite);
 		this._targets.push(targetObj);
 		var args = [...arguments].splice(1);
@@ -456,7 +444,6 @@ MK_SpriteAnimBase.prototype.addTarget = function(sprite) {
 	}
 };
 
-//MK_SpriteAnimBase.prototype.onAddTarget = function(sprite) {
 MK_SpriteAnimBase.prototype.onAddTarget = function(targetObj) {
 	this.onInitTarget(...arguments);
 };
@@ -468,69 +455,6 @@ MK_SpriteAnimBase.prototype.onInitTarget = function(targetObj) {
 
 // --------------------------------
 // 标记
-
-/*
-MK_SpriteAnimBase.prototype.setFlagAutoOn = function() {
-	this._flagAuto = true;
-};
-MK_SpriteAnimBase.prototype.setFlagAutoOff = function() {
-	this._flagAuto = false;
-};
-MK_SpriteAnimBase.prototype.getFlagAuto = function() {
-	return this._flagAuto;
-};
-
-MK_SpriteAnimBase.prototype.setFlagPlayOn = function() {
-	this._flagPlay = true;
-};
-MK_SpriteAnimBase.prototype.setFlagPlayOff = function() {
-	this._flagPlay = false;
-};
-MK_SpriteAnimBase.prototype.getFlagPlay = function() {
-	return this._flagPlay;
-};
-
-MK_SpriteAnimBase.prototype.setFlagPauseOn = function() {
-	this._flagPause = true;
-};
-MK_SpriteAnimBase.prototype.setFlagPauseOff = function() {
-	this._flagPause = false;
-};
-MK_SpriteAnimBase.prototype.getFlagPause = function() {
-	return this._flagPause;
-};
-
-MK_SpriteAnimBase.prototype.setFlagContinueOn = function() {
-	this._flagContinue = true;
-};
-MK_SpriteAnimBase.prototype.setFlagContinueOff = function() {
-	this._flagContinue = false;
-};
-MK_SpriteAnimBase.prototype.getFlagContinue = function() {
-	return this._flagContinue;
-};
-
-MK_SpriteAnimBase.prototype.setFlagStopOn = function() {
-	this._flagStop = true;
-};
-MK_SpriteAnimBase.prototype.setFlagStopOff = function() {
-	this._flagStop = false;
-};
-MK_SpriteAnimBase.prototype.getFlagStop = function() {
-	return this._flagStop;
-};
-
-MK_SpriteAnimBase.prototype.setFlagInitOn = function() {
-	this._flagInit = true;
-};
-MK_SpriteAnimBase.prototype.setFlagInitOff = function() {
-	this._flagInit = false;
-};
-MK_SpriteAnimBase.prototype.getFlagInit = function() {
-	return this._flagInit;
-};
-*/
-// 兼容合并
 
 MK_SpriteAnimBase.prototype.getAnimFlagKey = function(flagName) {
 	return '_flag' + flagName;
@@ -711,12 +635,6 @@ MK_SpriteAnimBase.prototype.update = function() {
 MK_SpriteAnimBase._PARAM_CONFIG = [
 ];
 
-/*
-MK_SpriteAnimBase.getParamConfig = function() {
-	return this._PARAM_CONFIG;
-};
-*/
-
 MK_SpriteAnimBase.prototype.getParamConfig = function() {
 	return this.constructor._PARAM_CONFIG;
 };
@@ -734,58 +652,19 @@ MK_SpriteAnimBase.prototype.getParamConfig = function() {
 // --------------------------------
 // 参数映射
 
-
 // [index -> key]
 //MK_SpriteAnimBase._PARAM_KEY_LIST = [
 //];
 
-/*
-MK_SpriteAnimBase._paramMapTable = null;
-// ？需要时再初始化 ...
-
-MK_SpriteAnimBase.touchParamMapTable = function() {
-	if (!this._paramMapTable) {
-		this.initParamMapTable();
-	}
-};
-MK_SpriteAnimBase.initParamMapTable = function() {
-	this._paramMapTable = [];
-	var keyList = this.getParamConfig();
-	for (var i = 0; i < keyList.length; i++) {
-		this._paramMapTable[keyList[i][0]] = i;
-	}
-};
-*/
-
 // {key -> index}
 MK_SpriteAnimBase.prototype.initParamMapTable = function() {
 	this._paramMapTable = {};
-	// TODO : 改 硬编码 为 可以从配置文件更改
-	//var keyList = this.constructor._PARAM_KEY_LIST;
-	//for (var i = 0; i < keyList.length; i++) {
-	//	this._paramMapTable[keyList[i]] = i;
-	//}
+
 	var keyList = this.getParamConfig();
 	for (var i = 0; i < keyList.length; i++) {
-		//this._paramMapTable[keyList[i]][0] = i;
 		this._paramMapTable[keyList[i][0]] = i;
 	}
 };
-
-/*
-MK_SpriteAnimBase.getParamIndex = function(key) {
-	this.touchParamMapTable();
-	var index = this._paramMapTable[key];
-	if (0 <= index) {
-		return index;
-	}
-	else {
-		console.error('key ' + key + ' not found');
-		return 0;
-	}
-};
-*/
-// ？派生类不会继承这个方法 ...
 
 MK_SpriteAnimBase.prototype.getParamIndex = function(key) {
 	var index = this._paramMapTable[key];
@@ -1030,28 +909,6 @@ MK_TextAnim_Fade.prototype.onInitTarget = function(obj) {
 
 MK_TextAnim_Fade.prototype.onPlaying = function() {
 	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	////if (s.opacity < this.getParam('opacityEnd')) {
-	////	s.opacity += this.getParam('opacitySpeed');
-	////}
-	////else {
-	////	this.setFlagStopOn();
-	////}
-	//// ？不一定从小变大，也能从大变小 ...
-	//var startO = this.getParam('opacityStart');
-	//var   endO = this.getParam('opacityEnd'  );
-	//var speedO = this.getParam('opacitySpeed');
-	//var hasChange = false;
-	//var   nowO = s.opacity;
-	//if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-	//	// 在变化范围(startO~endO)内
-	//	s.opacity += speedO;
-	//	hasChange = true;
-	//}
-	//if (!hasChange) {
-	//	this.setFlagStopOn();
-	//}
 
 	// ？部分动画不再自动停止 ...
 	// ？因为目标精灵可能在播放时添加 ...
@@ -1118,48 +975,6 @@ MK_TextAnim_Zoom.prototype.onInitTarget = function(obj) {
 
 MK_TextAnim_Zoom.prototype.onPlaying = function() {
 	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//var startO = this.getParam('opacityStart');
-	//var   endO = this.getParam('opacityEnd'  );
-	//var speedO = this.getParam('opacitySpeed');
-	//var startX = this.getParam('scaleXStart');
-	//var   endX = this.getParam('scaleXEnd'  );
-	//var speedX = this.getParam('scaleXSpeed');
-	//var startY = this.getParam('scaleYStart');
-	//var   endY = this.getParam('scaleYEnd'  );
-	//var speedY = this.getParam('scaleYSpeed');
-	//
-	//var hasChange = false;
-	//
-	//var   nowO = s.opacity;
-	//if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-	//	// 在变化范围(startO~endO)内
-	//	s.opacity += speedO;
-	//	hasChange = true;
-	//}
-	//var   nowX = s.scale.x;
-	//if ((startX <= nowX && nowX < endX) || (startX >= nowX && nowX > endX)) {
-	//	// 在变化范围(startO~endO)内
-	//	s.scale.x += speedX;
-	//	hasChange = true;
-	//}
-	//else {
-	//	s.scale.x = endX;
-	//}
-	//var   nowY = s.scale.y;
-	//if ((startY <= nowY && nowY < endY) || (startY >= nowY && nowY > endY)) {
-	//	// 在变化范围(startO~endO)内
-	//	s.scale.y += speedY;
-	//	hasChange = true;
-	//}
-	//else {
-	//	s.scale.y = endY;
-	//}
-	//
-	//if (!hasChange) {
-	//	this.setFlagStopOn();
-	//}
 
 	var startO = this.getParam('opacityStart');
 	var   endO = this.getParam('opacityEnd'  );
@@ -1336,12 +1151,6 @@ MK_TextAnim_Shake._PARAM_CONFIG = [
 
 MK_TextAnim_Shake.prototype.onInitTarget = function(obj) {
 	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//this._shakeCount = 0;
-	//this._shakeWaitCount = 0;
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//this._orgX = s.x;
-	//this._orgY = s.y;
 
 	if (!obj || !obj.sprite) return ;
 	s = obj.sprite;
@@ -1355,27 +1164,6 @@ MK_TextAnim_Shake.prototype.onInitTarget = function(obj) {
 
 MK_TextAnim_Shake.prototype.onPlaying = function() {
 	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var needStop = this.getParam('shakeNeedStop');
-	//var totalCount = this.getParam('shakeTotalCount');
-	//var waitCount = this.getParam('shakeWaitCount');
-	//var amplitude = this.getParam('shakeAmplitude');
-	//
-	//this._shakeWaitCount++;
-	//if (this._shakeWaitCount < waitCount) {
-	//	this._shakeWaitCount = 0;
-	//	var rnd1 = Math.randomInt(2 * amplitude) - amplitude;
-	//	var rnd2 = Math.randomInt(2 * amplitude) - amplitude;
-	//	s.x = rnd1 + this._orgX;
-	//	s.y = rnd2 + this._orgY;
-	//}
-	//
-	//this._shakeCount++;
-	//if (needStop > 0 && this._shakeCount >= totalCount) {
-	//	this.setFlagStopOn();
-	//}
 
 	var waitCount = this.getParam('shakeWaitCount');
 	var amplitude = this.getParam('shakeAmplitude');
@@ -1447,13 +1235,6 @@ MK_TextAnim_Zoom3._PARAM_CONFIG = [
 
 MK_TextAnim_Zoom3.prototype.onInitTarget = function(obj) {
 	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//this._subPhase = 1;
-	//this._shakeCount = 0;
-	//this._shakeWaitCount = 0;
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//this._orgX = s.x;
-	//this._orgY = s.y;
 
 	if (!obj || !obj.sprite) return ;
 	s = obj.sprite;
@@ -1471,67 +1252,6 @@ MK_TextAnim_Zoom3.prototype.onInitTarget = function(obj) {
 
 MK_TextAnim_Zoom3.prototype.onPlaying = function() {
 	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//if (this._subPhase == 1) {
-	//	var startO = this.getParam('opacityStart');
-	//	var   endO = this.getParam('opacityEnd'  );
-	//	var speedO = this.getParam('opacitySpeed');
-	//	var startX = this.getParam('scaleXStart');
-	//	var   endX = this.getParam('scaleXEnd'  );
-	//	var speedX = this.getParam('scaleXSpeed');
-	//	var startY = this.getParam('scaleYStart');
-	//	var   endY = this.getParam('scaleYEnd'  );
-	//	var speedY = this.getParam('scaleYSpeed');
-	//
-	//	var hasChange = false;
-	//
-	//	var   nowO = s.opacity;
-	//	if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-	//		// 在变化范围(startO~endO)内
-	//		s.opacity += speedO;
-	//		hasChange = true;
-	//	}
-	//	var   nowX = s.scale.x;
-	//	if ((startX <= nowX && nowX < endX) || (startX >= nowX && nowX > endX)) {
-	//		// 在变化范围(startO~endO)内
-	//		s.scale.x += speedX;
-	//		hasChange = true;
-	//	}
-	//	else {
-	//		s.scale.x = endX;
-	//	}
-	//	var   nowY = s.scale.y;
-	//	if ((startY <= nowY && nowY < endY) || (startY >= nowY && nowY > endY)) {
-	//		// 在变化范围(startO~endO)内
-	//		s.scale.y += speedY;
-	//		hasChange = true;
-	//	}
-	//	else {
-	//		s.scale.y = endY;
-	//	}
-	//
-	//	if (!hasChange) {
-	//		this._subPhase = 2;
-	//	}
-	//}
-	//
-	//if (this._subPhase == 2) {
-	//	var shakeTotalCount = this.getParam('shakeTotalCount');
-	//	this._shakeCount++;
-	//	this.onPlaying_shake();
-	//	if (this._shakeCount >= shakeTotalCount) { 
-	//		// 还原，也可以放在onStop
-	//		s.x = s._orgX;
-	//		s.y = s._orgY;
-	//		this._subPhase = 3;
-	//	};		 
-	//};
-	//
-	//if (this._subPhase == 3) {
-	//	this.setFlagStopOn();
-	//}
 
 	var startO = this.getParam('opacityStart');
 	var   endO = this.getParam('opacityEnd'  );
@@ -1659,11 +1379,6 @@ MK_TextAnim_Wave._PARAM_CONFIG = [
 
 MK_TextAnim_Wave.prototype.onInitTarget = function(obj) {
 	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//this._animCount = 0; // s.ani[0]
-	//this._loopCount = 0;
 
 	if (!obj || !obj.sprite) return ;
 	s = obj.sprite;
@@ -1675,30 +1390,6 @@ MK_TextAnim_Wave.prototype.onInitTarget = function(obj) {
 
 MK_TextAnim_Wave.prototype.onPlaying = function() {
 	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var scaleSpeed = this.getParam('scaleSpeed');
-	//var scaleCount = this.getParam('scaleCount');
-	//var loopTotal  = this.getParam('loopTotal');
-	//
-	//this._animCount++; 
-	//if (this._animCount <= 1 * scaleCount) {
-	//	s.scale.x += scaleSpeed;
-	//}
-	//else if (this._animCount <= 2 * scaleCount) {
-	//	s.scale.x -= scaleSpeed;
-	//}
-	//else {
-	//	//s.scale.x = 1;
-	//	this._animCount = 0;
-	//	this._loopCount++;
-	//};
-	//s.scale.y = s.scale.x;
-	//
-	//if (this._loopCount >= loopTotal) {
-	//	this.setFlagStopOn();
-	//}
 
 	var scaleSpeed = this.getParam('scaleSpeed');
 	var scaleCount = this.getParam('scaleCount');
@@ -1760,9 +1451,6 @@ MK_TextAnim_Rotation._PARAM_CONFIG = [
 
 MK_TextAnim_Rotation.prototype.onInitTarget = function(obj) {
 	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//this._animCount = 0;
 
 	if (!obj) return ;
 	s = obj.sprite;
@@ -1773,24 +1461,6 @@ MK_TextAnim_Rotation.prototype.onInitTarget = function(obj) {
 
 MK_TextAnim_Rotation.prototype.onPlaying = function() {
 	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var xx1 = this.getParam('xx1');
-	//var xx2 = this.getParam('xx2');
-	//var xx3 = this.getParam('xx3');
-	//
-	//this._animCount++;
-	//if (this._animCount <= xx1) {
-	//	s.rotation += xx3;
-	//}
-	//else if (this._animCount <= xx2) {
-	//	s.rotation = 0;
-	//}
-	//else {
-	//	s.rotation = 0;
-	//	this._animCount = 0;
-	//};
 
 	var xx1 = this.getParam('xx1');
 	var xx2 = this.getParam('xx2');
@@ -1852,14 +1522,6 @@ MK_TextAnim_Swing._PARAM_CONFIG = [
 
 MK_TextAnim_Swing.prototype.onInitTarget = function(obj) {
 	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var rotateInitDir = this.getParam('rotateInitDir');
-	//var angleInit     = this.getParam('angleInit');
-	//
-	//this._rotateR = (rotateInitDir == 'R');
-	//s.rotation = angleInit;
 
 	if (!obj || !obj.sprite) return ;
 	s = obj.sprite;
@@ -1874,26 +1536,6 @@ MK_TextAnim_Swing.prototype.onInitTarget = function(obj) {
 
 MK_TextAnim_Swing.prototype.onPlaying = function() {
 	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var rotateSpeed = this.getParam('rotateSpeed');
-	//var angleRangeL = this.getParam('angleRangeL');
-	//var angleRangeR = this.getParam('angleRangeR');
-	//
-	//if (this._rotateR) {
-	//	s.rotation += rotateSpeed;
-	//	if (s.rotation > angleRangeR) { 
-	//	    s.rotation = angleRangeR;
-	//        this._rotateR = false;
-	//	};
-	//} else {
-	//	s.rotation -= rotateSpeed;
-	//	if (s.rotation < angleRangeL) { 
-	//	    s.rotation = angleRangeL;
-	//        this._rotateR = true;
-	//	};
-	//};
 
 	var rotateSpeed = this.getParam('rotateSpeed');
 	var angleRangeL = this.getParam('angleRangeL');
@@ -1960,19 +1602,6 @@ MK_TextAnim_Random._PARAM_CONFIG = [
 
 MK_TextAnim_Random.prototype.onInitTarget = function(obj) {
 	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var scaleRangeMin = this.getParam('scaleRangeMin');
-	//var scaleRangeMax = this.getParam('scaleRangeMax');
-	//var scaleRadomSize = scaleRangeMax - scaleRangeMin;
-	//
-	//var rotateRange = this.getParam('rotateRange');
-	//var rotateDir = this.getParam('rotateDir');
-	//
-	//s.opacity = 0;
-	//s.scale.x = s.scale.y = Math.random() * scaleRadomSize + scaleRangeMin;
-	//s.rotation = (Math.random() * rotateRange) * (rotateDir == 'R' ? 1: -1);
 
 	if (!obj || !obj.sprite) return ;
 	s = obj.sprite;
@@ -1992,26 +1621,7 @@ MK_TextAnim_Random.prototype.onInitTarget = function(obj) {
 
 MK_TextAnim_Random.prototype.onPlaying = function() {
 	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var startO = this.getParam('opacityStart');
-	//var   endO = this.getParam('opacityEnd');
-	//var speedO = this.getParam('opacitySpeed');
-	//
-	//var hasChange = false;
-	//
-	//var   nowO = s.opacity;
-	//if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-	//	// 在变化范围(startO~endO)内
-	//	s.opacity += speedO;
-	//	hasChange = true;
-	//}
-	//
-	//if (!hasChange) {
-	//	this.setFlagStopOn();
-	//}
-	
+
 	var startO = this.getParam('opacityStart');
 	var   endO = this.getParam('opacityEnd');
 	var speedO = this.getParam('opacitySpeed');
@@ -2294,68 +1904,6 @@ MK_TextSprite.prototype.updateLetter_karaoke = function() {
 
 
 
-/*
-// ----------------------------------------------------------------
-// 配置管理器
-
-// 告诉管理器每个code对应的类
-
-(function () {
-	var list = [
-		// empty
-		MK_TextAnimBase, 		// 0 empty
-
-		// MOG_AnimterdText
-		MK_TextAnim_Fade, 		// 1 fade
-		MK_TextAnim_Zoom, 		// 2 zoom
-		MK_TextAnim_Zoom2, 		// 3 zoom2
-		//MK_TextAnim_Wipe, 	// 4 wipe
-		null, // tmp
-		MK_TextAnim_Shake, 		// 5 shake
-		MK_TextAnim_Zoom3, 		// 6 zoom3
-		MK_TextAnim_Wave, 		// 7 wave
-		MK_TextAnim_Rotation, 	// 8 rotation
-		MK_TextAnim_Swing, 		// 9 swing
-		MK_TextAnim_Random, 	// 10 random
-
-		// added
-		//MK_TextAnim_Karaoke, 	// 11 karaoke
-	];
-	list.forEach(function(animClass, idx) {
-		!!animClass && MK_SpriteAnimManager.setAnimClass(idx, animClass);
-	});
-})();
-
-// TODO : 增加 通过key找到动画类
-
-
-// ----------------------------------------------------------------
-// 写入动画参数
-
-(function() {
-
-	var pluginName = 'MKP_SpriteAnimationSet';
-	var param = MK_Plugins.param[pluginName];
-
-	param['animParamsConfig'].forEach(function(animParams) {
-		MK_SpriteAnimManager.setUserMapping(animParams.animCode, animParams.baseAnimCode);
-		animParams.params.forEach(function(params) {
-			if (!!params.key) {
-				MK_SpriteAnimManager.setAnimParamByKey(
-					animParams.animCode, params.key, params.value);
-			}
-			else {
-				MK_SpriteAnimManager.setAnimParam(
-					animParams.animCode, params.index, params.value);
-			}
-		});
-	});
-
-})();
-*/
-
-
-
 // ----------------------------------------------------------------
 // MK_SpriteAnimationSet
 
@@ -2370,7 +1918,6 @@ MK_SpriteAnimationSet._animationClasses = [];
 // setter of animation object
 
 MK_SpriteAnimationSet.addSpriteAnimationClass = function(animClass, name, index) {
-	//if (animClass instanceof MK_TextAnimBase) {
 	if (animClass.constructor instanceof MK_TextAnimBase.constructor) {
 		var animObj = {
 			class : animClass, 
@@ -2474,30 +2021,6 @@ MK_Plugins.class['MK_SpriteAnimationSet'] = MK_SpriteAnimationSet;
 // --------------------------------
 // init add animtion classes
 
-/*
-(function() {
-
-// empty
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnimBase); // 0 empty
-
-// MOG_AnimterdText
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Fade); // 1 fade
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Zoom); // 2 zoom
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Zoom2); // 3 zoom2
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnimBase); // 4 wipe (TODO : MK_TextAnim_Wipe)
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Shake); // 5 shake
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Zoom3); // 6 zoom3
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Wave); // 7 wave
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Rotation); // 8 rotation
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Swing); // 9 swing
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Random); // 10 random
-
-// added
-MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Karaoke); // 11 karaoke
-
-})();
-*/
-
 (function(list) {
 	list.forEach(each => MK_SpriteAnimationSet.addSpriteAnimationClass(each));
 })([
@@ -2519,38 +2042,6 @@ MK_SpriteAnimationSet.addSpriteAnimationClass(MK_TextAnim_Karaoke); // 11 karaok
 	// added
 	MK_TextAnim_Karaoke, // 11 karaoke
 ]);
-
-
-/*
-// --------------------------------
-// init set animtion default parameters
-
-(function() {
-
-	var pluginName = 'MKP_SpriteAnimationSet';
-	var param = MK_Plugins.param[pluginName];
-
-	param['animParamsConfig'].forEach(function(animParams) {
-		MK_SpriteAnimManager.setUserMapping(animParams.animCode, animParams.baseAnimCode);
-		animParams.params.forEach(function(params) {
-			if (!!params.key) {
-				MK_SpriteAnimManager.setAnimParamByKey(
-					animParams.animCode, params.key, params.value);
-			}
-			else {
-				MK_SpriteAnimManager.setAnimParam(
-					animParams.animCode, params.index, params.value);
-			}
-		});
-	});
-
-})();
-*/
-
-// ？这个原本是 MK_SpriteAnimManager 用来设置 默认动画 和 用户动画的参数的 ...
-// ？默认动画的参数也是可以缺省的 缺省时会使用文本动画类中的默认参数 ...
-// ？所以这部分交给 MK_SpriteAnimManager 而不是 MK_SpriteAnimationSet ...
-// ？同样地 也不需要储存参数 ...
 
 
 
