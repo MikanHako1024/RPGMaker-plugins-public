@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_SpriteAnimManager.js 精灵动画管理器
-// version : v0.3.0-alpha 2021/08/18 更新框架 : TextSprite解耦
+// version : v0.3.1 2021/08/18 调整框架、及时清理对象、更详细的textState
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,11 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.3.1 2021/08/18 调整框架、及时清理对象、更详细的textState
+ *     某些标签直接设置动画类对象的标签，不再写入TextSprite的标签
+ *     消息框换页和关闭时，清理动画类对象和字母精灵类对象
+ *     消息框的textState增加页数、行数、字数的状态
+ *     
  *   v0.3.0-alpha 2021/08/18 更新框架 : TextSprite解耦
  *   v0.2.0.branch1 2021/08/17 清理冗余注释
  *   v0.2.0 2021/08/17 更新框架
@@ -217,6 +222,7 @@
  * ## 后续任务
  * 
  * - [ ] 更准确地功能划分 : SpriteAnimManager 用来管理和播放动画，TextSprite 只用于支持绘制和动画等功能
+ * - [ ] 更新插件说明
  * 
  * 
  * ## 联系方式
@@ -398,7 +404,7 @@ function (pluginName) {
 // 文本动画管理器
 
 function MK_SpriteAnimManager() {
-    throw new Error('This is a static class');
+	throw new Error('This is a static class');
 };
 
 
@@ -633,10 +639,20 @@ MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite = function(textSprite) {
 // 精灵动画目标
 
 // 添加新动画对象时，为其初始化字母精灵目标
-MK_SpriteAnimManager.initSpriteAnimTarget = function(spriteAnim, code, textSprite) {
+//MK_SpriteAnimManager.initSpriteAnimTarget = function(spriteAnim, code, textSprite) {
+// ？可以通过 spriteAnim.getAnimCode 获取 code ...
+MK_SpriteAnimManager.initSpriteAnimTarget = function(spriteAnim, textSprite) {
 	if (spriteAnim) {
-		textSprite.filterLetterObjects(textSprite.animFlagFormat('add', code))
+		var code = spriteAnim.getAnimCode();
+		//textSprite.filterLetterObjects(textSprite.animFlagFormat('add', code))
+		textSprite.filterLetterObjectsByAnimFlag(code, 'add')
 			.forEach(letterObj => spriteAnim.addTarget(letterObj.sprite, letterObj.data));
+		// TODO : 使用 spriteAnim.setTargets 方法
+
+		if (typeof spriteAnim.setMsgWindow === 'function') {
+			spriteAnim.setMsgWindow(textSprite._msgWindow);
+		}
+		// TODO : 解耦 是否需要进行 setMsgWindow 应该由 spriteAnim 处理 ...
 	}
 };
 
@@ -645,8 +661,9 @@ MK_SpriteAnimManager.addNewSpriteAnimTarget = function(textSprite, letterObj) {
 	this._spriteAnimObjects.forEach(
 		function(spriteAnim, code) {
 			if (spriteAnim) {
-				var key = textSprite.animFlagFormat('add', code);
-				if (letterObj.flag[key]) {
+				//var key = textSprite.animFlagFormat('add', code);
+				//if (letterObj.flag[key]) {
+				if (textSprite.getLetterAnimFlag(letterObj, 'add', code)) {
 					spriteAnim.addTarget(letterObj.sprite, letterObj.data);
 				}
 			}
@@ -665,6 +682,22 @@ MK_TextSprite.prototype.onAddLetterSprite = function(letterObj) {
 
 
 // --------------------------------
+// 设置精灵动画标签
+
+//MK_SpriteAnimManager.setSpriteAnimFlag = function(code, flag, value) {
+MK_SpriteAnimManager.setSpriteAnimFlag = function(flag, code, value) {
+	var spriteAnim = this._spriteAnimObjects[code];
+	if (spriteAnim) {
+		flag = flag.slice(0, 1).toUpperCase() + flag.slice(1);
+		var flagOn = value === undefined ? true : !!value;
+		flagOn
+			 ? spriteAnim.setAnimFlagOn(flag)
+			 : spriteAnim.setAnimFlagOff(flag);
+	}
+};
+
+
+// --------------------------------
 // update
 
 //MK_SpriteAnimManager.updateSpriteAnimtions = function() {
@@ -673,7 +706,7 @@ MK_TextSprite.prototype.onAddLetterSprite = function(letterObj) {
 //};
 
 MK_SpriteAnimManager.updateSpriteAnimtions = function(textSprite) {
-	this.updateSpriteAnimtionsSetStatus(textSprite);
+	//this.updateSpriteAnimtionsSetStatus(textSprite);
 	this.updateSpriteAnimtionsFrameUpdate(textSprite);
 };
 
@@ -685,6 +718,7 @@ MK_SpriteAnimManager.updateSpriteAnimtionsFrameUpdate = function(textSprite) {
 	});
 };
 
+/*
 MK_SpriteAnimManager.updateSpriteAnimtionsSetStatus = function(textSprite) {
 	this._spriteAnimObjects.forEach(function(spriteAnim, code) {
 		//if (spriteAnim) {
@@ -703,10 +737,16 @@ MK_SpriteAnimManager.updateSpriteAnimtionsSetStatus = function(textSprite) {
 			})
 		}
 	}, this);
-
-	// ？和 精灵动画 SpriteAnim 耦合 ...
-	// TODO : ？想办法 解耦 ...
 };
+*/
+
+// ？和 精灵动画 SpriteAnim 耦合 ...
+// ？想办法 解耦 ...
+
+// ？控制字符调用时 不需要先设置 TextSprite对象 的标签 再更新到 SpriteAnim对象 的标签 ...
+// ？而是直接设置 SpriteAnim对象 的标签 ...
+
+
 
 // TODO : 想个办法 让 textsprite 使用的 动画不重复 ...
 // ？动画不储存在 MK_SpriteAnimManager 里 ...
@@ -780,18 +820,18 @@ Game_Interpreter.prototype.pluginCommand = function (command, args) {
 // 制作保存内容
 const _MK_DataManager_makeSaveContents = DataManager.makeSaveContents;
 DataManager.makeSaveContents = function() {
-    var contents = _MK_DataManager_makeSaveContents.apply(this, arguments);
-    contents.MK_SpriteAnimManager_UAnim = MK_SpriteAnimManager._userAnimMapping;
-    contents.MK_SpriteAnimManager_Param = MK_SpriteAnimManager._animParam;
-    return contents;
+	var contents = _MK_DataManager_makeSaveContents.apply(this, arguments);
+	contents.MK_SpriteAnimManager_UAnim = MK_SpriteAnimManager._userAnimMapping;
+	contents.MK_SpriteAnimManager_Param = MK_SpriteAnimManager._animParam;
+	return contents;
 };
 
 // 提取保存内容
 const _MK_DataManager_extractSaveContents = DataManager.extractSaveContents;
 DataManager.extractSaveContents = function(contents) {
-    _MK_DataManager_extractSaveContents.apply(this, arguments);
-    MK_SpriteAnimManager._userAnimMapping = contents.MK_SpriteAnimManager_UAnim || [];
-    MK_SpriteAnimManager._animParam = contents.MK_SpriteAnimManager_Param || [];
+	_MK_DataManager_extractSaveContents.apply(this, arguments);
+	MK_SpriteAnimManager._userAnimMapping = contents.MK_SpriteAnimManager_UAnim || [];
+	MK_SpriteAnimManager._animParam = contents.MK_SpriteAnimManager_Param || [];
 };
 
 })();
@@ -801,7 +841,7 @@ DataManager.extractSaveContents = function(contents) {
 
 
 
-// ----------------------------------------------------------------
+// --------------------------------
 // 写入动画参数
 
 (function() {
@@ -831,7 +871,12 @@ DataManager.extractSaveContents = function(contents) {
 // ----------------------------------------------------------------
 // 修改 Window_Message
 
+// ？TODO : 分离出 SpriteAnimationForMessageWindow ...
+
 (function() {
+
+// --------------------------------
+// 初始化
 
 const _MK_Window_Message__createAllParts = Window_Message.prototype._createAllParts;
 Window_Message.prototype._createAllParts = function() {
@@ -850,13 +895,16 @@ Window_Message.prototype.createContents = function() {
 	//textBitmap.textModeOff(); // ？默认关闭
 	this.contents = textBitmap;
 
-    this.resetFontSettings();
+	this.resetFontSettings();
 
-    // 改变了 this.contents.drawText
+	// 改变了 this.contents.drawText
 };
 
 // TODO : 添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
 
+
+// --------------------------------
+// update
 
 const _MK_Window_Message_update = Window_Message.prototype.update;
 Window_Message.prototype.update = function() {
@@ -869,10 +917,18 @@ Window_Message.prototype.update = function() {
 // ？TODO : 面向对象 ...
 
 
+// --------------------------------
+// 开始和结束消息
+
 const _MK_Window_Message_startMessage = Window_Message.prototype.startMessage;
 Window_Message.prototype.startMessage = function() {
 	// 暂时
 	//this._infoTextSprite.init();
+	//this._infoTextSprite.clearAll();
+
+	// ？开始时也要清除一次 ...
+	// ？因为连续显示消息 不会关闭消息窗口 ...
+	this.textAnim_clearTextSprite(); // TODO : 是否有必要
 	//this._infoTextSprite.clearAll();
 
 	// 把 messageWindow 的 textState 给他
@@ -881,24 +937,92 @@ Window_Message.prototype.startMessage = function() {
 	_MK_Window_Message_startMessage.apply(this, arguments);
 };
 
+/*
+const _MK_Window_Message_newPage = Window_Message.prototype.newPage;
+Window_Message.prototype.newPage = function(textState) {
+	// ？newPage 时 会执行 this.contents.clear() ...
+	// ？this.contents 是 TextBitmap 在 clear 时 清空 TextSprite 的 letter ...
+	// ？此时还要 清空 SpriteAnim 的 target ...
+	// TODO : TextSprite 是否需要 耦合 SpriteAnim 的 initTargets ...
 
-// TODO : 关闭时 就清除
+	//this.textAnim_clearTextSprite();
 
+	_MK_Window_Message_newPage.apply(this, arguments);
+};
+*/
+// ？不需要 ...
+// ？startMessage 时 会清除 TextSprite 同时也清除了 SpriteAnim ...
+// ？所以之后必须要 再次创建 SpriteAnim ...
+
+// 关闭时清除 TextSprite
+/*
 const _MK_Window_Message_updateClose = Window_Message.prototype.updateClose;
 Window_Message.prototype.updateClose = function() {
 	var noColsed = !this.isClosed();
 	_MK_Window_Message_updateClose.apply(this, arguments);
 	if (noColsed && this.isClosed()) {
 		// 之前未完全关闭 现在完全关闭了
-		MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
-		this._infoTextSprite.clearAll();
 		//MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
-		// ？要先清除 文本动画对象 在清除 文本精灵的标记 ...
-		// TODO : 清除方法 交给 this._infoTextSprite 执行
+		//this._infoTextSprite.clearAll();
+		////MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
+		//// ？要先清除 文本动画对象 在清除 文本精灵的标记 ...
+		//// TODO : 清除方法 交给 this._infoTextSprite 执行
+		this.textAnim_clearTextSprite();
 	}
+};
+*/
+// ？Window_Message对象 有 terminateMessage 方法 ...
+
+const _MK_Window_Message_terminateMessage = Window_Message.prototype.terminateMessage;
+Window_Message.prototype.terminateMessage = function() {
+	_MK_Window_Message_terminateMessage.apply(this, arguments);
+	this.textAnim_clearTextSprite();
+};
+
+Window_Message.prototype.textAnim_clearTextSprite = function() {
+	MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
+	this._infoTextSprite.clearAll();
+	//MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
+	// ？要先清除 文本动画对象 在清除 文本精灵的标记 ...
+	// TODO : 清除方法 交给 this._infoTextSprite 执行
 };
 
 
+// --------------------------------
+// 更详细的 textState
+
+const _MK_Window_Message_newPage = Window_Message.prototype.newPage;
+Window_Message.prototype.newPage = function(textState) {
+	_MK_Window_Message_newPage.apply(this, arguments);
+	textState.pageNum = (textState.pageNum || 0) + 1;
+	textState.lineNum = 1;
+	textState.textNum = 1;
+};
+
+const _MK_Window_Message_processNewPage = Window_Message.prototype.processNewPage;
+Window_Message.prototype.processNewPage = function(textState) {
+	_MK_Window_Message_processNewPage.apply(this, arguments);
+	textState.pageNum++;
+	textState.lineNum = 1;
+	textState.textNum = 1;
+};
+
+const _MK_Window_Message_processNewLine = Window_Message.prototype.processNewLine;
+Window_Message.prototype.processNewLine = function(textState) {
+	_MK_Window_Message_processNewLine.apply(this, arguments);
+	textState.lineNum++;
+	textState.textNum = 1;
+};
+
+const _MK_Window_Message_processNormalCharacter = Window_Message.prototype.processNormalCharacter;
+Window_Message.prototype.processNormalCharacter = function(textState) {
+	_MK_Window_Message_processNormalCharacter.apply(this, arguments);
+	textState.textNum++;
+};
+
+
+// --------------------------------
+// 控制字符
 
 const _MK_Window_Message_processEscapeCharacter = Window_Message.prototype.processEscapeCharacter;
 Window_Message.prototype.processEscapeCharacter = function(code, textState) {
@@ -908,6 +1032,7 @@ Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 
 	case 'TEXTANIM': // create text anim
 		var param = this.obtainEscapeParam(textState);
+		/*
 		var code = param || 0;
 		//this._infoTextSprite.addTextAnimByCode(code);
 		var spriteAnim = MK_SpriteAnimManager.addSpriteAnimObject(code);
@@ -915,6 +1040,8 @@ Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 		// TODO : 可以从 spriteAnim 获取 code
 		this.textAnim_setFlagAllowAddOn(code); // 默认开启
 		this.textAnim_setAnimFlagOn(code);
+		*/
+		this.textAnim_createTextAnim(param || 0);
 		break;
 
 	case 'TAPLAY': // text anim play
@@ -996,6 +1123,17 @@ Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 };
 
 
+Window_Message.prototype.textAnim_createTextAnim = function(code) {
+	//this._infoTextSprite.addTextAnimByCode(code);
+	var spriteAnim = MK_SpriteAnimManager.addSpriteAnimObject(code);
+	//MK_SpriteAnimManager.initSpriteAnimTarget(spriteAnim, code, this._infoTextSprite);
+	// ？可以从 spriteAnim 获取 code ...
+	MK_SpriteAnimManager.initSpriteAnimTarget(spriteAnim, this._infoTextSprite);
+	this.textAnim_setFlagAllowAddOn(code); // 默认开启
+	this.textAnim_setAnimFlagOn(code);
+};
+
+/*
 //MK_SpriteAnimManager.prototype.textAnim_setFlagAutoOn = function(code) {
 //	//this.setTextSpriteFlag('auto' + '_' + code, true);
 //	this.setTextSpriteAnimFlag('auto', code, true);
@@ -1036,6 +1174,38 @@ Window_Message.prototype.textAnim_setFlagEnabledOn = function(code) {
 };
 Window_Message.prototype.textAnim_setFlagEnabledOff = function(code) {
 	this._infoTextSprite.setTextSpriteAnimFlag('enabled', code, false);
+};
+*/
+
+Window_Message.prototype.textAnim_setFlagAutoOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('auto', code, true);
+};
+Window_Message.prototype.textAnim_setFlagAutoOff = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('auto', code, false);
+};
+// ？未使用
+
+Window_Message.prototype.textAnim_setFlagPlayOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('play', code, true);
+};
+Window_Message.prototype.textAnim_setFlagPauseOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('pause', code, true);
+};
+Window_Message.prototype.textAnim_setFlagContinueOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('continue', code, true);
+};
+Window_Message.prototype.textAnim_setFlagStopOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('stop', code, true);
+};
+Window_Message.prototype.textAnim_setFlagInitOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('init', code, true);
+};
+
+Window_Message.prototype.textAnim_setFlagEnabledOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('enabled', code, true);
+};
+Window_Message.prototype.textAnim_setFlagEnabledOff = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('enabled', code, false);
 };
 // ？未使用
 

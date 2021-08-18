@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_TextSprite.js 文本精灵
-// version : v0.2.0-alpha 2021/08/18 更新框架 : TextSprite解耦
+// version : v0.2.1 2021/08/18 调整字母对象框架、修复部分问题
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,10 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.2.1 2021/08/18 调整字母对象框架、修复部分问题
+ *     字母对象记录绘制位置和textState
+ *     增加按某一动画code筛选字母对象的方法
+ *     绘制时考虑文字外线
  *   v0.2.0-alpha 2021/08/18 更新框架 : TextSprite解耦
  *   v0.1.2.branch1 2021/08/17 清理冗余注释
  *   v0.1.2 2021/08/17 更新MKP_SpriteAnimManager的框架 相应地更新插件说明
@@ -178,10 +182,11 @@
  * 
  * ## 后续任务
  * 
- * - [ ] 添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
- * - [ ] 消息窗口关闭时，停止(?或销毁)动画实例
- * - [ ] 绘画文字时，考虑文字阴影，增加宽度
- * - [ ] 可以创建任意数量带id的无窗口的文本，显示时指定id，用id管理控制或关闭
+ * - [ ] ?添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
+ * - [ ] ?消息窗口关闭时，停止(?或销毁)动画实例
+ * - [x] 绘画文字时，考虑文字阴影，增加宽度
+ * - [ ] ?可以创建任意数量带id的无窗口的文本，显示时指定id，用id管理控制或关闭
+ * - [ ] 更新插件说明
  * 
  * 
  * ## 联系方式
@@ -222,43 +227,49 @@
 // 拓展contents 修改drawText
 
 function MK_TextBitmap() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextBitmap.prototype = Object.create(Bitmap.prototype);
 MK_TextBitmap.prototype.constructor = MK_TextBitmap;
 
 MK_TextBitmap.prototype.initialize = function(width, height) {
-    Bitmap.prototype.initialize.apply(this, arguments);
+	Bitmap.prototype.initialize.apply(this, arguments);
 
-    this._textSprite = null;
-    this._textMode = false;
+	this._textSprite = null;
+	this._textMode = false;
 };
 
 MK_TextBitmap.prototype.setTextSprite = function(sprite) {
-    this._textSprite = sprite;
+	this._textSprite = sprite;
 };
 MK_TextBitmap.prototype.textModeOn = function() {
-    this._textMode = true;
+	this._textMode = true;
 };
 MK_TextBitmap.prototype.textModeOff = function() {
-    this._textMode = false;
+	this._textMode = false;
 };
 
 MK_TextBitmap.prototype.needTextMode = function() {
-    return this._textMode && this._textSprite;
+	return this._textMode && this._textSprite;
 };
 
 
-MK_TextBitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, align) {
+//MK_TextBitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, align) {
+MK_TextBitmap.prototype.drawText = function(text, drawX, drawY, maxWidth, lineHeight, align) {
 	if (this.needTextMode()) {
-		var bitmap = new Bitmap(this.measureTextWidth(text), lineHeight);
-
-		// TODO : 还要考虑文字阴影，所以要加宽一点，同时偏移绘画位置
+		//var bitmap = new Bitmap(this.measureTextWidth(text), lineHeight);
+		// ？还要考虑文字边框和阴影，所以要加宽一点，同时偏移绘画位置 ...
+		var textMetrics = this.measureTextWidthWithOutline(text);
+		var bitmap = new Bitmap(
+			textMetrics.width + textMetrics.offsetWidth, 
+			lineHeight + textMetrics.offsetHeight);
 
 		var sprite = new Sprite(bitmap);
-		sprite.x = x;
-		sprite.y = y;
+		//sprite.x = x;
+		//sprite.y = y;
+		sprite.x = drawX - textMetrics.offsetX;
+		sprite.y = drawY - textMetrics.offsetY;
 
 		// 替换canvas 这样就不需要复制bitmap的配置了
 		var canvas = this._canvas;
@@ -268,13 +279,18 @@ MK_TextBitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, al
 		this.__context = bitmap._context;
 
 		this.textModeOff();
-		this.drawText(text, 0, 0, maxWidth, lineHeight, align);
+		//this.drawText(text, 0, 0, maxWidth, lineHeight, align);
+		//this.drawText(text, 
+		//	-textMetrics.offsetX, -textMetrics.offsetY, maxWidth, lineHeight, align);
+		Bitmap.prototype.drawText.call(this, text, 
+			-textMetrics.offsetX, -textMetrics.offsetY, maxWidth, lineHeight, align);
 		this.textModeOn(); // 这里当做之前一定是on状态，所以还原时直接on了
 
 		this.__canvas = canvas;
 		this.__context = context;
 
-		this._textSprite.addLetterSprite(sprite, text, x, y);
+		//this._textSprite.addLetterSprite(sprite, text, x, y);
+		this._textSprite.addLetterSprite(sprite, text, drawX, drawY, sprite.x, sprite.y);
 	}
 	else {
 		Bitmap.prototype.drawText.apply(this, arguments);
@@ -289,6 +305,29 @@ MK_TextBitmap.prototype.clear = function() {
 	Bitmap.prototype.clear.apply(this, arguments);
 	this.clearTextSprite();
 };
+
+
+(function() {
+
+// 带外框的宽度计算
+Bitmap.prototype.measureTextWidthWithOutline = function(text) {
+	var lineWidth = this.outlineWidth;
+	var shadowBlur = this._context.shadowBlur;
+	// TODO : bitmap.shadowBlur
+
+	var width = this.measureTextWidth(text);
+	var padding = lineWidth + shadowBlur;
+	return {
+		offsetX : -padding / 2, 
+		offsetY : -padding / 2, 
+		offsetWidth : padding, 
+		offsetHeight : padding, 
+		width : width, 
+	};
+};
+// TODO : 是否有原生方法实现
+
+})();
 
 
 
@@ -396,19 +435,55 @@ MK_TextSprite.prototype.addTextAnimTarget = function(sprite) {
 };
 */
 
-MK_TextSprite.prototype.createLetterObject = function(sprite, text, x, y) {
+MK_TextSprite.prototype.makeNewLetterData = function(sprite, text, drawX, drawY, sx, sy) {
+	/*
+	var data = Object.assign({
+		letterText : text || '', 
+		spriteX : x === undefined ? sprite.x : x, 
+		spriteY : y === undefined ? sprite.y : y, 
+	},  
+	this._msgWindow ? this._msgWindow._textState : {});
+	return data;
+	*/
+	var data = {
+		spriteData : {
+			text : text || '', 
+			drawX : drawX === undefined ? sprite.x : drawX, 
+			drawY : drawY === undefined ? sprite.y : drawY, 
+			x : sx === undefined ? sprite.x : sx, 
+			y : sy === undefined ? sprite.y : sy, 
+			width : sprite.width, 
+			height : sprite.height, 
+		}, 
+		textState : Object.assign({}, 
+			this._msgWindow ? this._msgWindow._textState : {}), 
+	}; 
+	return data;
+};
+
+//MK_TextSprite.prototype.createLetterObject = function(sprite, text, x, y) {
+MK_TextSprite.prototype.createLetterObject = function(sprite) {
 	return {
 		sprite : sprite, 
-		text : text || '', 
-		x : x === undefined ? sprite.x : x, 
-		y : y === undefined ? sprite.y : y, 
+		//text : text || '', 
+		//x : x === undefined ? sprite.x : x, 
+		//y : y === undefined ? sprite.y : y, 
 		//flag : {}, 
 		flag : Object.assign({}, this._newLetterFlag), 
-		data : {}, 
+		//data : {}, 
+		////data : {
+		//data :  Object.assign({
+		//	text : text || '', 
+		//	x : x === undefined ? sprite.x : x, 
+		//	y : y === undefined ? sprite.y : y, 
+		////}, 
+		//}, this.getNewLetterData()), 
+		data : this.makeNewLetterData(...arguments), 
 	}
 };
 
-MK_TextSprite.prototype.addLetterSprite = function(sprite, text, x, y) {
+//MK_TextSprite.prototype.addLetterSprite = function(sprite, text, x, y) {
+MK_TextSprite.prototype.addLetterSprite = function(sprite, text, drawX, drawY, sx, sy) {
 	if (!sprite) return ;
 
 	//this.addTextAnimTarget(sprite);
@@ -422,7 +497,8 @@ MK_TextSprite.prototype.addLetterSprite = function(sprite, text, x, y) {
 	//	//flag : {}, 
 	//	flag : Object.assign({}, this._newLetterFlag), 
 	//});
-	var letterObj = this.createLetterObject(sprite, text, x, y);
+	//var letterObj = this.createLetterObject(sprite, text, x, y);
+	var letterObj = this.createLetterObject(...arguments);
 	this._letters.push(letterObj);
 
 	//this.initLetter(sprite); // TODO
@@ -630,7 +706,7 @@ MK_TextSprite.prototype.getTextSpriteData = function(key) {
 	return this._textSpriteData[key];
 };
 
-MK_TextSprite.prototype.getLetterAnimFlag = function(key, code) {
+MK_TextSprite.prototype.getLetterAnimFlag = function(letter, key, code) {
 	//return letter && letter.flag ? letter.flag[key + '_' + code] : false;
 	return letter && letter.flag ? letter.flag[this.animFlagFormat(key, code)] : false;
 };
@@ -733,6 +809,18 @@ MK_TextSprite.prototype.filterLetterObjects = function(onFlags, offFlags) {
 		});
 };
 
+MK_TextSprite.prototype.filterLetterObjectsByAnimFlag = function(code, onKeys, offKeys) {
+	onKeys = !!onKeys
+		 ? (Array.isArray(onKeys) ? onKeys : [onKeys])
+				.map(key => this.animFlagFormat(key, code), this)
+		 : onKeys;
+	offKeys = !!offKeys
+		 ? (Array.isArray(offKeys) ? offKeys : [offKeys])
+				.map(key => this.animFlagFormat(key, code), this)
+		 : offKeys;
+	return this.filterLetterObjects(code, onKeys, offKeys);
+};
+
 
 // --------------------------------
 // 还原letter
@@ -778,9 +866,9 @@ Window_Message.prototype.createContents = function() {
 	//textBitmap.textModeOff(); // ？默认关闭
 	this.contents = textBitmap;
 
-    this.resetFontSettings();
+	this.resetFontSettings();
 
-    // 改变了 this.contents.drawText
+	// 改变了 this.contents.drawText
 };
 
 // TODO : 添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
