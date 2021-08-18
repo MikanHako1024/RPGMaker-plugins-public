@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_TextSprite.js 文本精灵
-// version : v0.2.1 2021/08/18 调整字母对象框架、修复部分问题
+// version : v0.2.2 2021/08/19 增加绘制图标的字母精灵
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.2.2 2021/08/19 增加绘制图标的字母精灵
  *   v0.2.1 2021/08/18 调整字母对象框架、修复部分问题
  *     字母对象记录绘制位置和textState
  *     增加按某一动画code筛选字母对象的方法
@@ -187,6 +188,7 @@
  * - [x] 绘画文字时，考虑文字阴影，增加宽度
  * - [ ] ?可以创建任意数量带id的无窗口的文本，显示时指定id，用id管理控制或关闭
  * - [ ] 更新插件说明
+ * - [ ] 默认关闭特殊绘制模式，需要时再打开
  * 
  * 
  * ## 联系方式
@@ -268,8 +270,10 @@ MK_TextBitmap.prototype.drawText = function(text, drawX, drawY, maxWidth, lineHe
 		var sprite = new Sprite(bitmap);
 		//sprite.x = x;
 		//sprite.y = y;
-		sprite.x = drawX - textMetrics.offsetX;
-		sprite.y = drawY - textMetrics.offsetY;
+		//sprite.x = drawX - textMetrics.offsetX;
+		//sprite.y = drawY - textMetrics.offsetY;
+		sprite.x = drawX + textMetrics.offsetX;
+		sprite.y = drawY + textMetrics.offsetY;
 
 		// 替换canvas 这样就不需要复制bitmap的配置了
 		var canvas = this._canvas;
@@ -296,6 +300,40 @@ MK_TextBitmap.prototype.drawText = function(text, drawX, drawY, maxWidth, lineHe
 		Bitmap.prototype.drawText.apply(this, arguments);
 	}
 };
+
+// 为了支持 drawIcon 还要拓展 blt 方法
+MK_TextBitmap.prototype.blt = function(source, sx, sy, sw, sh, drawX, drawY, dw, dh) {
+	if (this.needTextMode()) {
+	    dw = dw || sw;
+	    dh = dh || sh;
+		var bitmap = new Bitmap(dw, dh);
+
+		var sprite = new Sprite(bitmap);
+		sprite.x = drawX;
+		sprite.y = drawY;
+
+		// 替换canvas 这样就不需要复制bitmap的配置了
+		var canvas = this._canvas;
+		var context = this._context;
+
+		this.__canvas = bitmap._canvas;
+		this.__context = bitmap._context;
+
+		this.textModeOff();
+		Bitmap.prototype.blt.call(this, source, sx, sy, sw, sh, 0, 0, dw, dh);
+		this.textModeOn(); // 这里当做之前一定是on状态，所以还原时直接on了
+
+		this.__canvas = canvas;
+		this.__context = context;
+
+		this._textSprite.addLetterSprite(sprite, '', drawX, drawY, sprite.x, sprite.y);
+		// TODO : 加入图片类型的字母精灵，可以记录图片信息
+	}
+	else {
+		Bitmap.prototype.drawText.apply(this, arguments);
+	}
+};
+
 
 MK_TextBitmap.prototype.clearTextSprite = function() {
 	this._textSprite.clearLetters();
@@ -328,6 +366,10 @@ Bitmap.prototype.measureTextWidthWithOutline = function(text) {
 // TODO : 是否有原生方法实现
 
 })();
+
+// TODO : 默认关闭 needTextMode 需要时再开启
+// ？防止浪费性能 ...
+// ？同时 防止 在其他绘制的东西时 使用这种绘制 如绘制脸图 ...
 
 
 

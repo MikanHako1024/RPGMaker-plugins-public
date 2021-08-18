@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_SpriteAnimationSet.js 精灵动画集
-// version : v0.2.1 2021/08/18 调整框架、增加文本样式基类
+// version : v0.2.2 2021/08/19 增加动画类的名称、调整动画类code、考虑带脸图的消息框的文字居中样式
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.2.2 2021/08/19 增加动画类的名称、调整动画类code、考虑带脸图的消息框的文字居中样式
  *   v0.2.1 2021/08/18 调整框架、增加文本样式基类
  *     删除允许添加目标的标签
  *     修复变量名错误
@@ -388,6 +389,15 @@ MK_SpriteAnimBase.prototype.initAnimCode = function(code) {
 
 
 // --------------------------------
+// 动画name
+
+MK_SpriteAnimBase._DEFAULT_ANIM_NAME = 'SpriteAnimBase';
+
+// TODO : getter
+
+
+
+// --------------------------------
 // 目标列表
 
 // 对于目标，分为多目标和单目标
@@ -466,6 +476,12 @@ MK_SpriteAnimBase.prototype.addTarget = function(sprite, data) {
 	// ？精灵动画的框架内 不需要 flagAllowAdd ...
 
 	var targetObj = this.createTargetObj(sprite, data);
+	// ？不同的动画类 需要的数据不同 ...
+	// ？所以 应该由动画类自己实现一个 createTargetObj 方法 ...
+	// ？传入所有上下文数据 然后实现 createTargetObj 方法 写入必要的数据 ...
+	// ？...
+	// TODO : 完成该修改
+
 	this._targets.push(targetObj);
 	var args = [...arguments].splice(1);
 	this.onAddTarget(targetObj, ...args);
@@ -835,6 +851,9 @@ function MK_TextAnimBase() {
 MK_TextAnimBase.prototype = Object.create(MK_SpriteAnimBase.prototype);
 MK_TextAnimBase.prototype.constructor = MK_TextAnimBase;
 
+MK_TextAnimBase._DEFAULT_ANIM_CODE = 1;
+MK_TextAnimBase._DEFAULT_ANIM_NAME = 'TextAnimBase';
+
 // 派生类必须重新设置这个
 MK_TextAnimBase._PARAM_CONFIG = [
 ];
@@ -902,7 +921,8 @@ function MK_TextAnim_Fade() {
 MK_TextAnim_Fade.prototype = Object.create(MK_TextAnimBase.prototype);
 MK_TextAnim_Fade.prototype.constructor = MK_TextAnim_Fade;
 
-MK_TextAnim_Fade._DEFAULT_ANIM_CODE = 1;
+MK_TextAnim_Fade._DEFAULT_ANIM_CODE = 2;
+MK_TextAnim_Fade._DEFAULT_ANIM_NAME = 'TextAnim_Fade';
 
 MK_TextAnim_Fade._PARAM_CONFIG = [
 	['opacityStart', 	'number', 0],
@@ -978,7 +998,8 @@ function MK_TextAnim_Zoom() {
 MK_TextAnim_Zoom.prototype = Object.create(MK_TextAnimBase.prototype);
 MK_TextAnim_Zoom.prototype.constructor = MK_TextAnim_Zoom;
 
-MK_TextAnim_Zoom._DEFAULT_ANIM_CODE = 2;
+MK_TextAnim_Zoom._DEFAULT_ANIM_CODE = 3;
+MK_TextAnim_Zoom._DEFAULT_ANIM_NAME = 'TextAnim_Zoom';
 
 MK_TextAnim_Zoom._PARAM_CONFIG = [
 	['opacityStart', 	'number', 0],
@@ -1063,7 +1084,8 @@ function MK_TextAnim_Zoom2() {
 MK_TextAnim_Zoom2.prototype = Object.create(MK_TextAnim_Zoom.prototype);
 MK_TextAnim_Zoom2.prototype.constructor = MK_TextAnim_Zoom2;
 
-MK_TextAnim_Zoom2._DEFAULT_ANIM_CODE = 3;
+MK_TextAnim_Zoom2._DEFAULT_ANIM_CODE = 4;
+MK_TextAnim_Zoom2._DEFAULT_ANIM_NAME = 'TextAnim_Zoom2';
 
 MK_TextAnim_Zoom2._PARAM_CONFIG = [
 	['opacityStart', 	'number', 0],
@@ -1093,7 +1115,8 @@ function MK_TextAnim_Shake() {
 MK_TextAnim_Wipe.prototype = Object.create(MK_TextAnimBase.prototype);
 MK_TextAnim_Wipe.prototype.constructor = MK_TextAnim_Wipe;
 
-MK_TextAnim_Wipe._DEFAULT_ANIM_CODE = 4;
+MK_TextAnim_Wipe._DEFAULT_ANIM_CODE = 5;
+MK_TextAnim_Wipe._DEFAULT_ANIM_NAME = 'TextAnim_Wipe';
 
 MK_TextAnim_Wipe._PARAM_CONFIG = [
 ];
@@ -1172,7 +1195,8 @@ function MK_TextAnim_Shake() {
 MK_TextAnim_Shake.prototype = Object.create(MK_TextAnimBase.prototype);
 MK_TextAnim_Shake.prototype.constructor = MK_TextAnim_Shake;
 
-MK_TextAnim_Shake._DEFAULT_ANIM_CODE = 5;
+MK_TextAnim_Shake._DEFAULT_ANIM_CODE = 6;
+MK_TextAnim_Shake._DEFAULT_ANIM_NAME = 'TextAnim_Shake';
 
 MK_TextAnim_Shake._PARAM_CONFIG = [
 	['shakeWaitCount', 	'number', 3], // 震动等待计数(震动速度)
@@ -1249,7 +1273,8 @@ function MK_TextAnim_Zoom3() {
 MK_TextAnim_Zoom3.prototype = Object.create(MK_TextAnim_Zoom.prototype);
 MK_TextAnim_Zoom3.prototype.constructor = MK_TextAnim_Zoom3;
 
-MK_TextAnim_Zoom3._DEFAULT_ANIM_CODE = 6;
+MK_TextAnim_Zoom3._DEFAULT_ANIM_CODE = 7;
+MK_TextAnim_Zoom3._DEFAULT_ANIM_NAME = 'TextAnim_Zoom3';
 
 MK_TextAnim_Zoom3._PARAM_CONFIG = [
 	['opacityStart', 	'number', 0],
@@ -1403,7 +1428,8 @@ function MK_TextAnim_Wave() {
 MK_TextAnim_Wave.prototype = Object.create(MK_TextAnimBase.prototype);
 MK_TextAnim_Wave.prototype.constructor = MK_TextAnim_Wave;
 
-MK_TextAnim_Wave._DEFAULT_ANIM_CODE = 7;
+MK_TextAnim_Wave._DEFAULT_ANIM_CODE = 8;
+MK_TextAnim_Wave._DEFAULT_ANIM_NAME = 'TextAnim_Wave';
 
 MK_TextAnim_Wave._PARAM_CONFIG = [
 	['scaleSpeed', 	'number', 0.015], // 缩放速度
@@ -1475,7 +1501,8 @@ function MK_TextAnim_Rotation() {
 MK_TextAnim_Rotation.prototype = Object.create(MK_TextAnimBase.prototype);
 MK_TextAnim_Rotation.prototype.constructor = MK_TextAnim_Rotation;
 
-MK_TextAnim_Rotation._DEFAULT_ANIM_CODE = 8;
+MK_TextAnim_Rotation._DEFAULT_ANIM_CODE = 9;
+MK_TextAnim_Rotation._DEFAULT_ANIM_NAME = 'TextAnim_Rotation';
 
 MK_TextAnim_Rotation._PARAM_CONFIG = [
 	['xx1', 	'number', 63], 
@@ -1544,7 +1571,8 @@ function MK_TextAnim_Swing() {
 MK_TextAnim_Swing.prototype = Object.create(MK_TextAnimBase.prototype);
 MK_TextAnim_Swing.prototype.constructor = MK_TextAnim_Swing;
 
-MK_TextAnim_Swing._DEFAULT_ANIM_CODE = 9;
+MK_TextAnim_Swing._DEFAULT_ANIM_CODE = 10;
+MK_TextAnim_Swing._DEFAULT_ANIM_NAME = 'TextAnim_Swing';
 
 MK_TextAnim_Swing._PARAM_CONFIG = [
 	['rotateSpeed', 	'number', 0.02], // 旋转速度 (角度/帧)
@@ -1622,7 +1650,8 @@ function MK_TextAnim_Random() {
 MK_TextAnim_Random.prototype = Object.create(MK_TextAnimBase.prototype);
 MK_TextAnim_Random.prototype.constructor = MK_TextAnim_Random;
 
-MK_TextAnim_Random._DEFAULT_ANIM_CODE = 10;
+MK_TextAnim_Random._DEFAULT_ANIM_CODE = 11;
+MK_TextAnim_Random._DEFAULT_ANIM_NAME = 'TextAnim_Random';
 
 MK_TextAnim_Random._PARAM_CONFIG = [
 	['opacityStart', 	'number', 0],
@@ -1694,7 +1723,8 @@ function MK_TextAnim_Karaoke() {
 MK_TextAnim_Karaoke.prototype = Object.create(MK_TextAnimBase.prototype);
 MK_TextAnim_Karaoke.prototype.constructor = MK_TextAnim_Karaoke;
 
-MK_TextAnim_Karaoke._DEFAULT_ANIM_CODE = 11;
+MK_TextAnim_Karaoke._DEFAULT_ANIM_CODE = 31;
+MK_TextAnim_Karaoke._DEFAULT_ANIM_NAME = 'TextAnim_Karaoke';
 
 MK_TextAnim_Karaoke._PARAM_CONFIG = [
 	['playSpeed', 	'number', 2], // 播放速度(像素/帧)
@@ -1941,7 +1971,7 @@ MK_TextSprite.prototype.updateLetter_karaoke = function() {
 
 // ----------------------------------------------------------------
 // MK_TextStyleAnimBase
-// 文本样式动画基类
+// 文本动画派生类-文本样式动画基类
 
 // 用文本动画完成文字样式的设置
 // 派生于 MK_TextAnimBase
@@ -1955,6 +1985,9 @@ function MK_TextStyleAnimBase() {
 
 MK_TextStyleAnimBase.prototype = Object.create(MK_TextAnimBase.prototype);
 MK_TextStyleAnimBase.prototype.constructor = MK_TextStyleAnimBase;
+
+MK_TextStyleAnimBase._DEFAULT_ANIM_CODE = 51;
+MK_TextStyleAnimBase._DEFAULT_ANIM_NAME = 'TextStyleAnimBase';
 
 // 派生类必须重新设置这个
 MK_TextStyleAnimBase._PARAM_CONFIG = [
@@ -1989,21 +2022,25 @@ MK_TextXXXStyleAnim.prototype.onInitTarget = function(newObj) {
 
 
 // ----------------------------------------------------------------
-// MK_TextCenterStyleAnim
-// 文本居中样式动画
+// MK_TextStyleAnim_Center
+// 文本样式动画派生类-文本居中样式动画
 
-function MK_TextCenterStyleAnim() {
+//function MK_TextCenterStyleAnim() {
+function MK_TextStyleAnim_Center() {
     this.initialize.apply(this, arguments);
 };
 
-MK_TextCenterStyleAnim.prototype = Object.create(MK_TextStyleAnimBase.prototype);
-MK_TextCenterStyleAnim.prototype.constructor = MK_TextCenterStyleAnim;
+MK_TextStyleAnim_Center.prototype = Object.create(MK_TextStyleAnimBase.prototype);
+MK_TextStyleAnim_Center.prototype.constructor = MK_TextStyleAnim_Center;
 
-MK_TextCenterStyleAnim._PARAM_CONFIG = [
+MK_TextStyleAnim_Center._DEFAULT_ANIM_CODE = 52;
+MK_TextStyleAnim_Center._DEFAULT_ANIM_NAME = 'TextStyleAnim_Center';
+
+MK_TextStyleAnim_Center._PARAM_CONFIG = [
 ];
 // TODO : 增加配置 消息窗口左右不显示文字的区域
 
-MK_TextCenterStyleAnim.prototype.onInitTarget = function(newObj) {
+MK_TextStyleAnim_Center.prototype.onInitTarget = function(newObj) {
 	MK_TextStyleAnimBase.prototype.onInitTarget.apply(this, arguments);
 
 	var contents = this.getMsgContents();
@@ -2022,7 +2059,7 @@ MK_TextCenterStyleAnim.prototype.onInitTarget = function(newObj) {
 			eachLine[key] = eachLine[key] || {
 				////minX : 0, 
 				//maxX : 0, 
-				minX : d.x, 
+				//minX : d.x, 
 				maxX : d.x + d.width, 
 				arr : [], 
 				//sprites : [], 
@@ -2033,14 +2070,24 @@ MK_TextCenterStyleAnim.prototype.onInitTarget = function(newObj) {
 			if (eachLine[key].maxX < d.x + d.width) {
 				eachLine[key].maxX = d.x + d.width;
 			}
-			if (eachLine[key].minX > d.x) {
-				eachLine[key].minX = d.x;
-			}
+			//if (eachLine[key].minX > d.x) {
+			//	eachLine[key].minX = d.x;
+			//}
 		}, this);
 		for (var key in eachLine) {
 			//var offsetX = Math.floor((width - eachLine[key].maxX) / 2);
 			//var offsetX = Math.floor((width - (eachLine[key].maxX - eachLine[key].minX)) / 2 - eachLine[key].minX);
-			var offsetX = Math.floor((width - eachLine[key].maxX - eachLine[key].minX) / 2);
+			//var offsetX = Math.floor((width - eachLine[key].maxX - eachLine[key].minX) / 2);
+			// ？还需要 textState.left ...
+			//var left = eachLine[key].arr[0] ? eachLine[key].arr[0].data.textState.left : 0;
+
+			//var offsetX = Math.floor((width - left - eachLine[key].maxX - eachLine[key].minX) / 2);
+			//var offsetX = Math.floor((width - left - eachLine[key].maxX + eachLine[key].minX) / 2);
+			// ？错了 ...
+			// ？长度差的一半 即是偏移距离 ...
+			// ？((width - min) - (max - min)) / 2 = (width - max) / 2 ...
+			// ？所以 不需要 left 和 min ...
+			var offsetX = Math.floor((width - eachLine[key].maxX) / 2);
 			//eachLine[key].sprites.forEach(sprite => sprite.x += offsetX);
 			eachLine[key].arr.forEach(function(obj) {
 				obj.sprite.x = offsetX + obj.data.spriteData.x;
@@ -2091,10 +2138,15 @@ MK_SpriteAnimationSet.addSpriteAnimationClass = function(animClass, name, index)
 */
 
 MK_SpriteAnimationSet.addSpriteAnimationClass = function(animClass, name) {
-	if (animClass.constructor instanceof MK_TextAnimBase.constructor) {
+	//if (animClass.constructor instanceof MK_TextAnimBase.constructor) {
+	//if (animClass.constructor instanceof MK_TextAnimBase) {
+	if (animClass === MK_SpriteAnimBase
+		 || (animClass && animClass.prototype && animClass.prototype instanceof MK_SpriteAnimBase)) {
 		var animObj = {
 			class : animClass, 
-			name : name || animClass.constructor.name, 
+			//name : name || animClass.constructor.name, 
+			//name : name || animClass.constructor._DEFAULT_ANIM_NAME, 
+			name : name || animClass.name, 
 			code : this._animationClasses.length, 
 			params : {}, // 暂不使用
 		};
@@ -2107,16 +2159,21 @@ MK_SpriteAnimationSet.addSpriteAnimationClass = function(animClass, name) {
 };
 
 MK_SpriteAnimationSet.addSpriteAnimationClassAt = function(index, animClass, name) {
-	if (animClass.constructor instanceof MK_TextAnimBase.constructor) {
+	//if (animClass.constructor instanceof MK_TextAnimBase.constructor) {
+	//if (animClass.constructor instanceof MK_TextAnimBase) {
+	if (animClass === MK_SpriteAnimBase
+		 || (animClass && animClass.prototype && animClass.prototype instanceof MK_SpriteAnimBase)) {
 		var animObj = {
 			class : animClass, 
-			name : name || animClass.constructor.name, 
+			//name : name || animClass.constructor.name, 
+			//name : name || animClass.constructor._DEFAULT_ANIM_NAME, 
+			name : name || animClass.name, 
 			code : index, 
 			params : {}, // 暂不使用
 		};
 		if (!!this._animationClasses[index]) {
 			var oldAnimObj = this._animationClasses[index];
-			console.wran(`sprite animation code ${index} exists. ${animObj.name} -> ${oldAnimObj.name}`);
+			console.warn(`sprite animation code ${index} exists. ${animObj.name} -> ${oldAnimObj.name}`);
 		}
 		this._animationClasses[index] = animObj;
 	}
@@ -2207,28 +2264,52 @@ MK_Plugins.class['MK_SpriteAnimationSet'] = MK_SpriteAnimationSet;
 // --------------------------------
 // init add animtion classes
 
-(function(list) {
-	list.forEach(each => 
-		MK_SpriteAnimationSet.addSpriteAnimationClass(each));
+(function(list, startIndex) {
+	list.forEach((each, i) => 
+		MK_SpriteAnimationSet.addSpriteAnimationClassAt(startIndex + i, each));
 })([
 	// empty
-	MK_TextAnimBase, // 0 empty
+	//MK_TextAnimBase, // 0 empty, text anim base
+	MK_SpriteAnimBase, // 0 empty, sprite anim base
+], 0);
+
+
+//(function(list) {
+//	list.forEach(each => 
+//		MK_SpriteAnimationSet.addSpriteAnimationClass(each));
+(function(list, startIndex) {
+	list.forEach((each, i) => 
+		MK_SpriteAnimationSet.addSpriteAnimationClassAt(startIndex + i, each));
+})([
+	// empty
+	//MK_TextAnimBase, // 0 empty, text anim base
 
 	// MOG_AnimterdText
-	MK_TextAnim_Fade, // 1 fade
-	MK_TextAnim_Zoom, // 2 zoom
-	MK_TextAnim_Zoom2, // 3 zoom2
-	MK_TextAnimBase, // 4 wipe
-	MK_TextAnim_Shake, // 5 shake
-	MK_TextAnim_Zoom3, // 6 zoom3
-	MK_TextAnim_Wave, // 7 wave
-	MK_TextAnim_Rotation, // 8 rotation
-	MK_TextAnim_Swing, // 9 swing
-	MK_TextAnim_Random, // 10 random
+	MK_TextAnimBase, // 1 fade
+	MK_TextAnim_Fade, // 2 fade
+	MK_TextAnim_Zoom, // 3 zoom
+	MK_TextAnim_Zoom2, // 4 zoom2
+	MK_TextAnimBase, // 5 wipe
+	//null, // 5 wipe
+	MK_TextAnim_Shake, // 6 shake
+	MK_TextAnim_Zoom3, // 7 zoom3
+	MK_TextAnim_Wave, // 8 wave
+	MK_TextAnim_Rotation, // 9 rotation
+	MK_TextAnim_Swing, // 10 swing
+	MK_TextAnim_Random, // 11 random
 
 	// added
-	MK_TextAnim_Karaoke, // 11 karaoke
-]);
+	//MK_TextAnim_Karaoke, // 11 karaoke
+], 1);
+
+
+(function(list, startIndex) {
+	list.forEach((each, i) => 
+		MK_SpriteAnimationSet.addSpriteAnimationClassAt(startIndex + i, each));
+})([
+	// text maker
+	MK_TextAnim_Karaoke, // 31 karaoke
+], 31);
 
 
 (function(list, startIndex) {
@@ -2236,7 +2317,13 @@ MK_Plugins.class['MK_SpriteAnimationSet'] = MK_SpriteAnimationSet;
 		MK_SpriteAnimationSet.addSpriteAnimationClassAt(startIndex + i, each));
 })([
 	// text style
-	MK_TextCenterStyleAnim, // 51 center style
+	MK_TextStyleAnimBase, // 51 text style base
+	//MK_TextCenterStyleAnim, // 52 center style
+	MK_TextStyleAnim_Center, // 52 center style
 ], 51);
+
+
+// TODO : 可在插件参数里 调整顺序
+
 
 

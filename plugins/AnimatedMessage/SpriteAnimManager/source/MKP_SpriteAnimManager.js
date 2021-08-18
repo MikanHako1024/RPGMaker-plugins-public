@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_SpriteAnimManager.js 精灵动画管理器
-// version : v0.3.1 2021/08/18 调整框架、及时清理对象、更详细的textState
+// version : v0.3.2 2021/08/19 考虑绘制图标
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,11 +24,11 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.3.2 2021/08/19 考虑绘制图标
  *   v0.3.1 2021/08/18 调整框架、及时清理对象、更详细的textState
  *     某些标签直接设置动画类对象的标签，不再写入TextSprite的标签
  *     消息框换页和关闭时，清理动画类对象和字母精灵类对象
  *     消息框的textState增加页数、行数、字数的状态
- *     
  *   v0.3.0-alpha 2021/08/18 更新框架 : TextSprite解耦
  *   v0.2.0.branch1 2021/08/17 清理冗余注释
  *   v0.2.0 2021/08/17 更新框架
@@ -62,8 +62,8 @@
  * 
  * #### 动画id
  * 动画分为基础动画和自定义参数动画  
- * + 基础动画拥有固定的默认参数，id分布在0~99  
- * + 自定义参数动画可以指定一个基础动画，并使用自己设置的参数，id分布在100及以后  
+ * + 基础动画拥有固定的默认参数，id分布在0~100  
+ * + 自定义参数动画可以指定一个基础动画，并使用自己设置的参数，id分布在101及以后  
  * 
  * #### 动画参数
  * 可以在插件参数中配置初始动画参数  
@@ -108,10 +108,10 @@
  *   - 固定写法，不区分大小写
  * + 用户动画id
  *   - 所设置的用户动画的id
- *   - 数值，用户动画id，大于100
+ *   - 数值，用户动画id，大于等于101
  * + 默认动画id
  *   - 作为模板的默认动画的id
- *   - 数值，默认动画id，小于99，大于等于0
+ *   - 数值，默认动画id，小于等于100，大于等于0
  *   - 当设置为0时，表示清除用户动画
  * 
  * #### 设置动画参数(按序号)
@@ -223,6 +223,7 @@
  * 
  * - [ ] 更准确地功能划分 : SpriteAnimManager 用来管理和播放动画，TextSprite 只用于支持绘制和动画等功能
  * - [ ] 更新插件说明
+ * - [ ] 调整基础动画和用户动画的code，使得不会冲突
  * 
  * 
  * ## 联系方式
@@ -269,12 +270,15 @@
  * @text 动画id
  * @desc 
  * @type number
- * @default 100
+ * @min 101
+ * @default 101
  *
  * @param baseAnimCode
  * @text 基础动画id
  * @desc 
  * @type number
+ * @min 0
+ * @max 100
  * @default 0
  *
  * @param params
@@ -370,7 +374,7 @@ function (pluginName) {
 	paramParser['parseAnimParam'] = parseAnimParam;
 
 	function parseAnimParams(str) {
-		str = str || '{"animCode":100,"baseAnimCode":0,"params":[]}';
+		str = str || '{"animCode":101,"baseAnimCode":0,"params":[]}';
 		var data = JSON.parse(str);
 		data.animCode     = Number(data.animCode     || 100);
 		data.baseAnimCode = Number(data.baseAnimCode ||   0);
@@ -413,8 +417,8 @@ function MK_SpriteAnimManager() {
 
 // 映射表MapTable 映射值Mapping
 // 映射表分为基础映射表和用户映射表
-// 基础映射表序号分布为 0 到 99(MAX_ANIM_SIZE)
-// 用户映射表序号分布为 100(MAX_ANIM_SIZE+1)以后
+// 基础映射表序号分布为 0 到 100(MAX_ANIM_SIZE)
+// 用户映射表序号分布为 101(MAX_ANIM_SIZE+1)以后
 // 基础映射表为所有基础动画(系统动画)的code->key映射
 // 用户映射表为用户设定的uCode->bCode(基础动画code)
 
@@ -454,7 +458,7 @@ MK_SpriteAnimManager.getUserMapTable = function() {
 // TODO : 保存映射表
 // 暂时不保存
 
-MK_SpriteAnimManager.MAX_ANIM_SIZE = 99;
+MK_SpriteAnimManager.MAX_ANIM_SIZE = 100;
 MK_SpriteAnimManager.maxAnimSize = function() {
 	return this.MAX_ANIM_SIZE;
 };
@@ -481,6 +485,11 @@ MK_SpriteAnimManager.getUserMapping = function(uCode) {
 };
 
 // TODO : ？用RM的变量指定 ...
+
+// TODO : ？分开 基础动画 和 用户动画 的 code 范围 ...
+// ？让用户动画可以使用任意code ...
+// ？防止 当基础动画数量增长后 与之前设置的用户动画code 冲突 ...
+// ？即 改 基础 : 0~100, 用户 : 101+ 为 基础 : 任意, 用户 : 任意 ...
 
 
 
@@ -1017,6 +1026,12 @@ Window_Message.prototype.processNewLine = function(textState) {
 const _MK_Window_Message_processNormalCharacter = Window_Message.prototype.processNormalCharacter;
 Window_Message.prototype.processNormalCharacter = function(textState) {
 	_MK_Window_Message_processNormalCharacter.apply(this, arguments);
+	textState.textNum++;
+};
+
+const _MK_Window_Message_processDrawIcon = Window_Message.prototype.processDrawIcon;
+Window_Message.prototype.processDrawIcon = function(iconIndex, textState) {
+	_MK_Window_Message_processDrawIcon.apply(this, arguments);
 	textState.textNum++;
 };
 
