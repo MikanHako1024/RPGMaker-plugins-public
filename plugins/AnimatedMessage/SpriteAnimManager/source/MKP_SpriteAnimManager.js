@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_SpriteAnimManager.js 精灵动画管理器
-// version : v0.3.2 2021/08/19 考虑绘制图标
+// version : v0.3.3 2021/08/21 增加调用摧毁动画类方法
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.3.3 2021/08/21 增加调用摧毁动画类方法
  *   v0.3.2 2021/08/19 考虑绘制图标
  *   v0.3.1 2021/08/18 调整框架、及时清理对象、更详细的textState
  *     某些标签直接设置动画类对象的标签，不再写入TextSprite的标签
@@ -224,6 +225,7 @@
  * - [ ] 更准确地功能划分 : SpriteAnimManager 用来管理和播放动画，TextSprite 只用于支持绘制和动画等功能
  * - [ ] 更新插件说明
  * - [ ] 调整基础动画和用户动画的code，使得不会冲突
+ * - [ ] 优化管理文本动画对象，不反复创建和清除对象，而是清空动画目标并禁用文本动画对象(文本动画类提供该方法)
  * 
  * 
  * ## 联系方式
@@ -629,7 +631,11 @@ MK_SpriteAnimManager.getSpriteAnimObject = function(code) {
 // 清除文本动画对象
 
 MK_SpriteAnimManager.clearSpriteAnimObject = function(code) {
-	this._spriteAnimObjects[code] = null;
+	//this._spriteAnimObjects[code] = null;
+	if (this._spriteAnimObjects[code]) {
+		this._spriteAnimObjects[code].destroyMe(); // ？...
+		this._spriteAnimObjects[code] = null;
+	}
 };
 MK_SpriteAnimManager.clearAllSpriteAnimObject = function() {
 	this._spriteAnimObjects.splice(0);
@@ -994,6 +1000,8 @@ Window_Message.prototype.textAnim_clearTextSprite = function() {
 	//MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
 	// ？要先清除 文本动画对象 在清除 文本精灵的标记 ...
 	// TODO : 清除方法 交给 this._infoTextSprite 执行
+
+	// TODO : onDestroy
 };
 
 

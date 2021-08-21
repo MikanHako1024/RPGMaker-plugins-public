@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_TextSprite.js 文本精灵
-// version : v0.2.2 2021/08/19 增加绘制图标的字母精灵
+// version : v0.2.3 2021/08/21 增加绘制圆的方法、增加移除文字精灵的方法
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.2.3 2021/08/21 增加绘制圆的方法、增加移除文字精灵的方法
  *   v0.2.2 2021/08/19 增加绘制图标的字母精灵
  *   v0.2.1 2021/08/18 调整字母对象框架、修复部分问题
  *     字母对象记录绘制位置和textState
@@ -189,6 +190,7 @@
  * - [ ] ?可以创建任意数量带id的无窗口的文本，显示时指定id，用id管理控制或关闭
  * - [ ] 更新插件说明
  * - [ ] 默认关闭特殊绘制模式，需要时再打开
+ * - [ ] 优化创建字母精灵，缓存一些sprite和bitmap，防止创建太多
  * 
  * 
  * ## 联系方式
@@ -304,8 +306,8 @@ MK_TextBitmap.prototype.drawText = function(text, drawX, drawY, maxWidth, lineHe
 // 为了支持 drawIcon 还要拓展 blt 方法
 MK_TextBitmap.prototype.blt = function(source, sx, sy, sw, sh, drawX, drawY, dw, dh) {
 	if (this.needTextMode()) {
-	    dw = dw || sw;
-	    dh = dh || sh;
+		dw = dw || sw;
+		dh = dh || sh;
 		var bitmap = new Bitmap(dw, dh);
 
 		var sprite = new Sprite(bitmap);
@@ -334,6 +336,37 @@ MK_TextBitmap.prototype.blt = function(source, sx, sy, sw, sh, drawX, drawY, dw,
 	}
 };
 
+MK_TextBitmap.prototype.drawCircle = function(drawX, drawY, radius, color) {
+	if (this.needTextMode()) {
+		var bitmap = new Bitmap(radius * 2, radius * 2);
+
+		var sprite = new Sprite(bitmap);
+		sprite.x = drawX - radius;
+		sprite.y = drawY - radius;
+
+		// 无需替换canvas 直接使用新bitmap的 context ...
+		//var canvas = this._canvas;
+		//var context = this._context;
+
+		//var context = bitmap._context;
+		//context.save();
+		//context.fillStyle = color;
+		//context.beginPath();
+		//context.arc(radius, radius, radius, 0, Math.PI * 2, false);
+		//context.fill();
+		//context.restore();
+		////this._setDirty();
+		//bitmap._setDirty();
+		// ？即是 新bitmap的 drawCircle 方法 ...
+		bitmap.drawCircle(radius, radius, radius, color);
+
+		this._textSprite.addLetterSprite(sprite, '', drawX, drawY, sprite.x, sprite.y);
+	}
+	else {
+		Bitmap.prototype.drawCircle.apply(this, arguments);
+	}
+};
+
 
 MK_TextBitmap.prototype.clearTextSprite = function() {
 	this._textSprite.clearLetters();
@@ -345,10 +378,11 @@ MK_TextBitmap.prototype.clear = function() {
 };
 
 
-(function() {
+//(function() {
 
 // 带外框的宽度计算
-Bitmap.prototype.measureTextWidthWithOutline = function(text) {
+//Bitmap.prototype.measureTextWidthWithOutline = function(text) {
+MK_TextBitmap.prototype.measureTextWidthWithOutline = function(text) {
 	var lineWidth = this.outlineWidth;
 	var shadowBlur = this._context.shadowBlur;
 	// TODO : bitmap.shadowBlur
@@ -365,7 +399,8 @@ Bitmap.prototype.measureTextWidthWithOutline = function(text) {
 };
 // TODO : 是否有原生方法实现
 
-})();
+//})();
+
 
 // TODO : 默认关闭 needTextMode 需要时再开启
 // ？防止浪费性能 ...
@@ -554,6 +589,26 @@ MK_TextSprite.prototype.addLetterSprite = function(sprite, text, drawX, drawY, s
 // 续写该方法以监听添加文字精灵
 MK_TextSprite.prototype.onAddLetterSprite = function(letterObj) {
 };
+
+
+// --------------------------------
+// 移除文字精灵
+
+MK_TextSprite.prototype.removeLetterSprite = function(sprite) {
+	var letterObjIndex = this._letters.findIndex(each => each && each.sprite === sprite);
+	if (letterObjIndex >= 0) {
+		var letterObj = this._letters[letterObjIndex];
+		this._letters.splice(letterObjIndex, 1);
+		this.removeSprite(sprite);
+		this.onRemoveLetterSprite(letterObj);
+	}
+};
+
+
+// 续写该方法以监听移除文字精灵
+MK_TextSprite.prototype.onRemoveLetterSprite = function(letterObj) {
+};
+
 
 
 

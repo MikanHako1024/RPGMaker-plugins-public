@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_SpriteAnimationSet.js 精灵动画集
-// version : v0.2.2 2021/08/19 增加动画类的名称、调整动画类code、考虑带脸图的消息框的文字居中样式
+// version : v0.2.3-alpha 2021/08/21 完成卡拉OK效果
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.2.3-alpha 2021/08/21 完成卡拉OK效果
  *   v0.2.2 2021/08/19 增加动画类的名称、调整动画类code、考虑带脸图的消息框的文字居中样式
  *   v0.2.1 2021/08/18 调整框架、增加文本样式基类
  *     删除允许添加目标的标签
@@ -205,9 +206,11 @@
  * 
  * ## 后续任务
  * 
- * - [ ] 制作卡拉OK效果
+ * - [x] 制作卡拉OK效果
  * - [x] 尝试利用动画类完成其他的功能，比如文字居中
  * - [ ] 更新插件说明
+ * - [ ] 优化文本居中样式动画，缓存计算信息，并记录
+ * - [ ] target对象的类和接口
  * 
  * 
  * ## 联系方式
@@ -326,13 +329,13 @@
 // ？TODO : 用配置表配置流程变化，使派生类可以添加新阶段，并自定义流程 ...
 
 function MK_SpriteAnimBase() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_SpriteAnimBase.prototype = Object.create(Object.prototype);
 MK_SpriteAnimBase.prototype.constructor = MK_SpriteAnimBase;
 
-MK_SpriteAnimBase.prototype.initialize = function(code) {
+MK_SpriteAnimBase.prototype.initialize = function(code, ...args) {
 	// 动画code
 	//this._animCode = 0;
 	this.initAnimCode(code);
@@ -361,9 +364,8 @@ MK_SpriteAnimBase.prototype.initialize = function(code) {
 	this._flagEnabled = true; // 是否启用的标记，用来禁用
 	//this._flagAllowAdd = true; // ？是否允许添加精灵 ...
 
-	this.onCreate();
+	this.onCreate(...args);
 };
-
 
 
 // --------------------------------
@@ -448,7 +450,7 @@ MK_SpriteAnimBase.prototype.initTargets = function() {
 MK_SpriteAnimBase.prototype.createTargetObjWithVar = function(sprite, data, varObj) {
 	return {
 		'sprite': sprite || null,
-		'data': data || {}, // 暂未使用
+		'data': data || {}, // TODO : 复制对象
 		'var': varObj || {},
 	};
 };
@@ -477,8 +479,8 @@ MK_SpriteAnimBase.prototype.addTarget = function(sprite, data) {
 
 	var targetObj = this.createTargetObj(sprite, data);
 	// ？不同的动画类 需要的数据不同 ...
-	// ？所以 应该由动画类自己实现一个 createTargetObj 方法 ...
-	// ？传入所有上下文数据 然后实现 createTargetObj 方法 写入必要的数据 ...
+	// ？所以 应该由动画类自己实现一个 makeNewLetterData 方法 ...
+	// ？textSprite 传入所有上下文数据 然后通过 makeNewLetterData 方法 写入必要的数据 ...
 	// ？...
 	// TODO : 完成该修改
 
@@ -491,7 +493,7 @@ MK_SpriteAnimBase.prototype.onAddTarget = function(targetObj) {
 	this.onInitTarget(...arguments);
 };
 
-MK_SpriteAnimBase.prototype.onInitTarget = function(targetObj) {
+MK_SpriteAnimBase.prototype.onInitTarget = function(targetObj, ...args) {
 };
 
 
@@ -579,7 +581,7 @@ MK_SpriteAnimBase.prototype.setFlagAllowAddOff = function() {
 // --------------------------------
 // 阶段操作
 
-MK_SpriteAnimBase.prototype.onCreate = function() {
+MK_SpriteAnimBase.prototype.onCreate = function(...args) {
 };
 
 MK_SpriteAnimBase.prototype.onStart = function() {
@@ -672,6 +674,13 @@ MK_SpriteAnimBase.prototype.update = function() {
 	}
 };
 
+
+// --------------------------------
+// 销毁
+
+MK_SpriteAnimBase.prototype.destroyMe = function() {
+};
+// ？onDestroy ...
 
 
 // --------------------------------
@@ -845,7 +854,7 @@ MK_SpriteAnimBase.prototype.setParamByKey = function(key, value) {
 // 以解决 需要获取messageWindow的contents和textState的功能 不方便改写MK_SpriteAnimBase 的尴尬
 
 function MK_TextAnimBase() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnimBase.prototype = Object.create(MK_SpriteAnimBase.prototype);
@@ -858,13 +867,15 @@ MK_TextAnimBase._DEFAULT_ANIM_NAME = 'TextAnimBase';
 MK_TextAnimBase._PARAM_CONFIG = [
 ];
 
-MK_TextAnimBase.prototype.initialize = function(code, msgWindow) {
-	MK_SpriteAnimBase.prototype.initialize.apply(this, arguments);
+//MK_TextAnimBase.prototype.initialize = function(code, msgWindow) {
+//	MK_SpriteAnimBase.prototype.initialize.apply(this, arguments);
+MK_TextAnimBase.prototype.onCreate = function(msgWindow, ...args) {
+	MK_SpriteAnimBase.prototype.onCreate.apply(this, arguments);
 
 	// 消息窗口
-	this._msgWindow = msgWindow;
+	//this._msgWindow = msgWindow;
+	this.setMsgWindow(msgWindow);
 };
-
 
 
 // --------------------------------
@@ -915,7 +926,7 @@ MK_TextAnimBase.prototype.getMsgContents = function() {
 // 文本动画派生类-fade
 
 function MK_TextAnim_Fade() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnim_Fade.prototype = Object.create(MK_TextAnimBase.prototype);
@@ -992,7 +1003,7 @@ MK_TextAnim_Fade.prototype.onPlaying = function() {
 // 文本动画派生类-zoom
 
 function MK_TextAnim_Zoom() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnim_Zoom.prototype = Object.create(MK_TextAnimBase.prototype);
@@ -1078,7 +1089,7 @@ MK_TextAnim_Zoom.prototype.onPlaying = function() {
 // 文本动画派生类-zoom2
 
 function MK_TextAnim_Zoom2() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnim_Zoom2.prototype = Object.create(MK_TextAnim_Zoom.prototype);
@@ -1109,7 +1120,7 @@ MK_TextAnim_Zoom2._PARAM_CONFIG = [
 // 文本动画派生类-wipe
 
 function MK_TextAnim_Shake() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnim_Wipe.prototype = Object.create(MK_TextAnimBase.prototype);
@@ -1189,7 +1200,7 @@ MK_TextAnim_Wipe.prototype.onStop = function() {
 // 文本动画派生类-shake
 
 function MK_TextAnim_Shake() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnim_Shake.prototype = Object.create(MK_TextAnimBase.prototype);
@@ -1267,7 +1278,7 @@ MK_TextAnim_Shake.prototype.onPlaying = function() {
 // 文本动画派生类-zoom3
 
 function MK_TextAnim_Zoom3() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnim_Zoom3.prototype = Object.create(MK_TextAnim_Zoom.prototype);
@@ -1422,7 +1433,7 @@ MK_TextAnim_Zoom3.prototype.playing_shake = function(targetObj, waitCount, ampli
 // 文本动画派生类-wave
 
 function MK_TextAnim_Wave() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnim_Wave.prototype = Object.create(MK_TextAnimBase.prototype);
@@ -1495,7 +1506,7 @@ MK_TextAnim_Wave.prototype.onPlaying = function() {
 // 文本动画派生类-rotation
 
 function MK_TextAnim_Rotation() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnim_Rotation.prototype = Object.create(MK_TextAnimBase.prototype);
@@ -1545,8 +1556,8 @@ MK_TextAnim_Rotation.prototype.onPlaying = function() {
 		};
 	}, this);
 
-    // TODO : 总播放帧
-    // ？？改 总播放帧为循环次数 ...
+	// TODO : 总播放帧
+	// ？？改 总播放帧为循环次数 ...
 
 };
 
@@ -1565,7 +1576,7 @@ MK_TextAnim_Rotation.prototype.onPlaying = function() {
 // 文本动画派生类-swing
 
 function MK_TextAnim_Swing() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnim_Swing.prototype = Object.create(MK_TextAnimBase.prototype);
@@ -1610,22 +1621,22 @@ MK_TextAnim_Swing.prototype.onPlaying = function() {
 		if (v._rotateR) {
 			s.rotation += rotateSpeed;
 			if (s.rotation > angleRangeR) { 
-			    s.rotation = angleRangeR;
-		       v._rotateR = false;
+				s.rotation = angleRangeR;
+			   v._rotateR = false;
 			};
 		} else {
 			s.rotation -= rotateSpeed;
 			if (s.rotation < angleRangeL) { 
-			    s.rotation = angleRangeL;
-		       v._rotateR = true;
+				s.rotation = angleRangeL;
+			   v._rotateR = true;
 			};
 		};
 
-    	// s.rotation = 0;
+		// s.rotation = 0;
 
 	}, this);
 
-    // TODO : 总播放帧
+	// TODO : 总播放帧
 };
 
 //MK_TextAnim_Swing.prototype.onStop = function() {
@@ -1644,7 +1655,7 @@ MK_TextAnim_Swing.prototype.onPlaying = function() {
 // 文本动画派生类-random
 
 function MK_TextAnim_Random() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextAnim_Random.prototype = Object.create(MK_TextAnimBase.prototype);
@@ -1711,257 +1722,121 @@ MK_TextAnim_Random.prototype.onPlaying = function() {
 
 
 // ----------------------------------------------------------------
-// MK_TextAnim_Karaoke
-// 文本动画派生类-karaoke
+// MK_TextMakerAnimBase
+// 文本动画派生类-文本绘制动画基类
 
-// FINISH : 把 KTV 改名为 Karaoke
+// 派生于 MK_TextAnimBase
+// 动画类将绘制额外的内容 之后再播放动画
 
-function MK_TextAnim_Karaoke() {
-    this.initialize.apply(this, arguments);
+function MK_TextMakerAnimBase() {
+	this.initialize.apply(this, arguments);
 };
 
-MK_TextAnim_Karaoke.prototype = Object.create(MK_TextAnimBase.prototype);
-MK_TextAnim_Karaoke.prototype.constructor = MK_TextAnim_Karaoke;
+MK_TextMakerAnimBase.prototype = Object.create(MK_TextAnimBase.prototype);
+MK_TextMakerAnimBase.prototype.constructor = MK_TextMakerAnimBase;
 
-MK_TextAnim_Karaoke._DEFAULT_ANIM_CODE = 31;
-MK_TextAnim_Karaoke._DEFAULT_ANIM_NAME = 'TextAnim_Karaoke';
+MK_TextMakerAnimBase._DEFAULT_ANIM_CODE = 31;
+MK_TextMakerAnimBase._DEFAULT_ANIM_NAME = 'TextMakerAnimBase';
 
-MK_TextAnim_Karaoke._PARAM_CONFIG = [
-	['playSpeed', 	'number', 2], // 播放速度(像素/帧)
-	['lineWidth', 	'number', 4], 
-	['uLineColor', 	'string', '#FFFFFF'], 
-	['uTextColor', 	'string', '#000000'], 
-	['dLineColor', 	'string', '#000000'], 
-	['dTextColor', 	'string', '#FFFFFF'], 
+// 派生类必须重新设置这个
+MK_TextMakerAnimBase._PARAM_CONFIG = [
 ];
 
 
-
-/*
-MK_TextAnim_Karaoke.prototype.initialize = function(code, msgWindow) {
-	MK_TextAnimBase.prototype.initialize.apply(this, arguments);
-
-	// 指定窗口
-	// 为了 使用窗口的context的bitmap的配置
-	// 为了 获取消息窗口的文本
-	this._msgWindow = msgWindow || null;
-
-	// 精灵分组
-	//this._spriteGourp = [];
-};
-*/
-// msgWindow部分移至MK_TextAnimBase
-
-
-
-/*
-// --------------------------------
-// 精灵分组
-
-// ？设置分组，然后以组为单位提出到目标列表 ...
-// ？TODO : 这个功能是否可以写进基类 ...
-
-MK_TextAnim_Karaoke.prototype.setSpriteGroup = function(groupIndex, sprites) {
-	this._spriteGourp[groupIndex] = sprites;
-};
-MK_TextAnim_Karaoke.prototype.useSpriteGroup = function(groupIndex) {
-	this.setTargets(this._spriteGourp[groupIndex]);
-};
-MK_TextAnim_Karaoke.prototype.getSpriteGroups = function() {
-	return this._spriteGourp;
-};
-
-MK_TextAnim_Karaoke.prototype.addTargetToGroup = function(groupIndex, sprite) {
-	if (!this._spriteGourp[groupIndex]) {
-		this._spriteGourp[groupIndex] = [];
-	}
-	this._spriteGourp[groupIndex].push(sprite);
-};
-
-// ？改成 用分组对目标的所有精灵标记，标记播放的行号 ...
-
-
-MK_TextAnim_Karaoke.prototype.addTargetToGroupByText = function(groupIndex, textState) {
-	
-};
-*/
-// ？暂时抛弃这个功能 ...
-// ？直接用多个实例即可实现多行播放，而不需要在一个实例中处理 ...
-
-
-
-// --------------------------------
-// 当添加精灵
-
-/*
-MK_TextAnim_Karaoke.prototype.addTargetByMsgWindow = function() {
-	if (!this._msgWindow) return ;
-	var context = this._msgWindow.contents;
-	var textState = this._msgWindow._textState;
-	var text = textState.text[textState.index - 1];
-*/
-// ？动画类里不负责获取文本等逻辑，这部分逻辑由MK_TextBitmap完成 ...
-// ？动画类里只负责 对获取到的文本和生成好的精灵进行处理 ...
-
-//MK_TextAnim_Karaoke.prototype.onAddTarget = function(targetObj, textStatus, contents) {
-//	MK_TextAnimBase.prototype.onAddTarget.apply(this, arguments);
-//	textStatus = textStatus || this.getMsgTextStatus();
-//	contents   = contents   || this.getMsgContents();
-//	if (!textStatus || !contents) return ;
-//	var text = textState.text[textState.index - 1];
-//	this.initKtvSprite(targetObj, text, contents);
-//};
-
-MK_TextAnim_Karaoke.prototype.onInitTarget = function(targetObj, textState, contents) {
-	MK_TextAnimBase.prototype.onAddTarget.apply(this, arguments);
-	textState = textState || this.getMsgTextState();
-	contents   = contents   || this.getMsgContents();
-	var text = textState.text[textState.index - 1];
-	this.initKtvSprite(targetObj, text, msgBitmap);
-};
-
-MK_TextAnim_Karaoke.prototype.initKtvSprite = function(targetObj, text, msgBitmap) {
-
-	var dLineColor = this.getParam('dLineColor');
-	var lineWidth  = this.getParam('lineWidth');
-	var dTextColor = this.getParam('dTextColor');
-	var uLineColor = this.getParam('uLineColor');
-	var uTextColor = this.getParam('uTextColor');
-
-	// 记录
-	var oldBitmap = msgBitmap; // this._msgWindow.contents
-	var old_canvas = oldBitmap._canvas;
-	var old_context = oldBitmap._context;
-	var old_outlineColor = oldBitmap.outlineColor;
-	var old_lineWidth = oldBitmap.lineWidth;
-	var old_textColor = oldBitmap.textColor;
-	!!oldBitmap.textModeOff && oldBitmap.textModeOff(); // MK_TextBitmap
-
-	// ？可以直接用 MK_TextBitmap 创建sprite ...
-
-	// 下层(down)
-	var bitmap1 = new Bitmap(sprite.width, sprite.height);
-	var sprite1 = new Sprite(bitmap1);
-	oldBitmap._canvas = bitmap1._canvas;
-	oldBitmap._context = bitmap1._context;
-	oldBitmap.outlineColor = dLineColor;
-	oldBitmap.lineWidth = lineWidth;
-	oldBitmap.textColor = dTextColor;
-	oldBitmap.drawText(text, 0, 0, sprite.width, sprite.height);
-
-	// 上层(up)
-	var bitmap2 = new Bitmap(sprite.width, sprite.height);
-	var sprite2 = new Sprite(bitmap2);
-	oldBitmap._canvas = bitmap2._canvas;
-	oldBitmap._context = bitmap2._context;
-	oldBitmap.outlineColor = uLineColor;
-	oldBitmap.lineWidth = lineWidth;
-	oldBitmap.textColor = uTextColor;
-	oldBitmap.drawText(text, 0, 0, sprite.width, sprite.height);
-	sprite2.setFrame(0, 0, 0, 0);
-
-	// 还原
-	oldBitmap._canvas      = old_canvas;
-	oldBitmap._context     = old_context;
-	oldBitmap.outlineColor = old_outlineColor;
-	oldBitmap.lineWidth    = old_lineWidth;
-	oldBitmap.textColor    = old_textColor;
-	!!oldBitmap.textModeOn && oldBitmap.textModeOn(); // MK_TextBitmap
-
-	// 消除s.bitmap的图案
-	s.setFrame(0, 0, 0, 0);
-
-	v._karaokeSprite1 = sprite1;
-	v._karaokeSprite2 = sprite2;
-	s.addChild(sprite1);
-	s.addChild(sprite2);
-};
-
-
-
-MK_TextAnim_Karaoke.prototype.onCreate = function() {
+MK_TextMakerAnimBase.prototype.onCreate = function(msgWindow, ...args) {
 	MK_TextAnimBase.prototype.onCreate.apply(this, arguments);
+	this._extraTargets = [];
+	this._drawForExtraContent = false;
+};
 
-	// TODO : create 里分组，
+// --------------------------------
+// 额外目标对象 (sprite + variable)
 
-	var sprites = this.getTargets();
+MK_TextMakerAnimBase.prototype.createExtraTargetObjWithVar = function(sprite, data, varObj) {
+	return MK_TextAnimBase.prototype.createTargetObjWithVar.apply(this, arguments);
+};
+MK_TextMakerAnimBase.prototype.createExtraTargetObj = function(sprite, data) {
+	return MK_TextAnimBase.prototype.createTargetObj.apply(this, arguments);
+};
 
-	this._endPosX = sprites
-	.map(function(s) { return s.x; }, this)
-	.filter(function(x) { return !Number.isNaN(x); }, this)
-	.concat(0) // default value (min value)
-	.reduce(function(xa, xb) { return xa > xb ? xa : xb; }, this); // max
+// --------------------------------
+// 添加额外目标
 
-	this._startPosX = sprites
-	.map(function(s) { return s.x; }, this)
-	.filter(function(x) { return !Number.isNaN(x); }, this)
-	.concat(this._endPosX) // default value (max value)
-	.reduce(function(xa, xb) { return xa < xb ? xa : xb; }, this); // min
+MK_TextMakerAnimBase.prototype.addExtraTarget = function(sprite, data) {
+	var targetObj = this.createExtraTargetObj(sprite, data);
 
-	//this._playWidth = 0;
-	//this._totalWidth = this._endPosX - this._startPosX;
+	this._extraTargets.push(targetObj);
+	var args = [...arguments].splice(1);
+	this.onAddExtraTarget(targetObj, ...args);
+};
 
-	this._playPosX = this._startPosX;
+MK_TextMakerAnimBase.prototype.onAddExtraTarget = function(targetObj) {
+	this.onInitExtraTarget(...arguments);
+};
 
-	// 播放速度(像素/帧)，可以改变成员变量以改变播放速度
-	// ？区别于用户主动设置的速度，主动设置的修改动画参数 ...
-	// ？这个速度可能是动画类自己进行的修改，所以是成员变量，而不是动画参数 ...
-	this._playSpeed = this.getParam('playSpeed');
+// 重写该方法以初始化额外目标对象
+MK_TextMakerAnimBase.prototype.onInitExtraTarget = function(targetObj, ...args) {
+};
 
-	// === break ===
+// --------------------------------
+// 捕获绘制的额外内容
 
-}; // TODO
+// ？绘制不是由文本动画类对象 进行绘制 ...
+// ？而是 由绑定的窗口调用绘制方法 再通过 textSprite 创建字母精灵 并把字母精灵添加到 textAnim 的目标里 ...
+// ？所以 需要在添加 textAnim 目标时 判断应该交给 原addTarget方法处理 还是 addExtraTarget方法处理 ...
 
-MK_TextAnim_Karaoke.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
+MK_TextMakerAnimBase.prototype.startDrawExtraContent = function() {
+	this._drawForExtraContent = true;
+};
+MK_TextMakerAnimBase.prototype.endDrawExtraContent = function() {
+	this._drawForExtraContent = false;
+};
+MK_TextMakerAnimBase.prototype.isDrawForExtraContent = function() {
+	return this._drawForExtraContent;
+};
 
-	var sprites = this.getTargets();
-
-	if (!(this._karaokeWidth >= 0)) {
-		this._karaokeWidth = 0;
+MK_TextMakerAnimBase.prototype.addTarget = function(sprite, data) {
+	if (this.isDrawForExtraContent()) {
+		this.addExtraTarget(...arguments);
 	}
-	
-	var totalWidth = 0;
-	var animSpeed = this.getParam('animSpeed');
+	else {
+		MK_TextAnimBase.prototype.addTarget.apply(this, arguments);
+	}
+};
 
-	this._karaokeWidth += animSpeed;
-	//this._letters.forEach(function(s) {
-	this._letters.forEach(function(letter) {
-		var s = letter.sprite;
-		if (s._needAnim) {
-			// 暂时 s 只有一种动画  TODO : ...
-	
-			s._karaokeTime = totalWidth;
-			s._karaokeWidth = this._karaokeWidth;
-			//s._karaokeSpeed = animSpeed; // 不再需要计算总完成
+// --------------------------------
+// 绘制额外内容
 
-			totalWidth += s.bitmap.width;
-		}
-	}, this);
+// 调用该方法以绘制并添加额外内容
+MK_TextMakerAnimBase.prototype.addExtraContent = function() {
+	this.startDrawExtraContent();
+	this.drawExtraContent(...arguments);
+	this.endDrawExtraContent();
+};
 
-
-	// === break ===
+// 重写该方法以实现绘制
+MK_TextMakerAnimBase.prototype.drawExtraContent = function(...args) {
+};
 
 
-	var s = this.getTarget();
-	if (!s) return ;
-
-}; // TODO
-
-MK_TextAnim_Karaoke.prototype.onStop = function() {
-	MK_TextAnimBase.prototype.onStop.apply(this, arguments);
-	var s = this.getTarget();
-	if (!s) return ;
-}; // TODO
+// --------------------------------
+// 派生示例
 
 /*
-MK_TextSprite.prototype.updateLetter_karaoke = function() {
-	if (s._karaokeTime <= s._karaokeWidth) {
-		var t = s._karaokeWidth - s._karaokeTime;
-    	var w = t > s._karaokeSprite2.bitmap.width ? s._karaokeSprite2.bitmap.width : t;
-    	var h = s._karaokeSprite2.bitmap.height;
-    	s._karaokeSprite2.setFrame(0, 0, w, h);
+MK_TextMakerAnim_xxx.prototype.drawExtraContent = function(aa, bb) {
+	MK_TextMakerAnimBase.prototype.drawExtraContent.apply(this, arguments);
+	if (this._msgWindow) {
+		this._msgWindow.contents.drawXxx(yyy);
 	}
+};
+
+MK_TextMakerAnim_xxx.prototype.onInitExtraTarget = function(obj, ...args) {
+	MK_TextMakerAnimBase.prototype.onInitExtraTarget.apply(this, arguments);
+	if (!obj || !obj.sprite) return ;
+	var s = obj.sprite;
+	var v = obj.var;
+	var d = obj.data;
+	...
 };
 */
 
@@ -1970,17 +1845,1646 @@ MK_TextSprite.prototype.updateLetter_karaoke = function() {
 
 
 // ----------------------------------------------------------------
+// MK_TextMakerAnim_Karaoke
+// 文本绘制动画派生类-karaoke
+
+// 把 KTV 改名为 Karaoke
+
+// TODO : 整理该类的结构
+
+function MK_TextMakerAnim_Karaoke() {
+	this.initialize.apply(this, arguments);
+};
+
+MK_TextMakerAnim_Karaoke.prototype = Object.create(MK_TextMakerAnimBase.prototype);
+MK_TextMakerAnim_Karaoke.prototype.constructor = MK_TextMakerAnim_Karaoke;
+
+MK_TextMakerAnim_Karaoke._DEFAULT_ANIM_CODE = 32;
+MK_TextMakerAnim_Karaoke._DEFAULT_ANIM_NAME = 'TextMakerAnim_Karaoke';
+
+MK_TextMakerAnim_Karaoke._PARAM_CONFIG = [
+	['krcContents',  'string', '{"lyricLines": [{"start": 868, "duration": 6369, "content": [{"start": 0, "duration": 153, "text": "羽"}, {"start": 153, "duration": 202, "text": "ば"}, {"start": 355, "duration": 151, "text": "た"}, {"start": 506, "duration": 757, "text": "い"}, {"start": 1263, "duration": 759, "text": "た"}, {"start": 2022, "duration": 1214, "text": "ら"}, {"start": 3236, "duration": 152, "text": "戻"}, {"start": 3388, "duration": 150, "text": "ら"}, {"start": 3538, "duration": 810, "text": "な"}, {"start": 4348, "duration": 505, "text": "い"}, {"start": 4853, "duration": 152, "text": "と"}, {"start": 5005, "duration": 203, "text": "言"}, {"start": 5208, "duration": 253, "text": "っ"}, {"start": 5461, "duration": 908, "text": "て"}]}, {"start": 7237, "duration": 6663, "content": [{"start": 0, "duration": 203, "text": "目"}, {"start": 203, "duration": 151, "text": "指"}, {"start": 354, "duration": 150, "text": "し"}, {"start": 504, "duration": 707, "text": "た"}, {"start": 1211, "duration": 655, "text": "の"}, {"start": 1866, "duration": 1159, "text": "は"}, {"start": 3025, "duration": 203, "text": "苍"}, {"start": 3228, "duration": 557, "text": "い"}, {"start": 3785, "duration": 201, "text": "苍"}, {"start": 3986, "duration": 606, "text": "い"}, {"start": 4592, "duration": 202, "text": "あ"}, {"start": 4794, "duration": 656, "text": "の"}, {"start": 5450, "duration": 1213, "text": "空"}]}, {"start": 26455, "duration": 2985, "content": [{"start": 0, "duration": 101, "text": "悲"}, {"start": 101, "duration": 202, "text": "し"}, {"start": 303, "duration": 152, "text": "み"}, {"start": 455, "duration": 151, "text": "は"}, {"start": 606, "duration": 203, "text": "ま"}, {"start": 809, "duration": 456, "text": "だ"}, {"start": 1265, "duration": 253, "text": "覚"}, {"start": 1518, "duration": 203, "text": "え"}, {"start": 1721, "duration": 253, "text": "ら"}, {"start": 1974, "duration": 354, "text": "れ"}, {"start": 2328, "duration": 657, "text": "ず"}]}, {"start": 29440, "duration": 2986, "content": [{"start": 0, "duration": 154, "text": "切"}, {"start": 154, "duration": 151, "text": "な"}, {"start": 305, "duration": 151, "text": "さ"}, {"start": 456, "duration": 355, "text": "は"}, {"start": 811, "duration": 201, "text": "今"}, {"start": 1012, "duration": 507, "text": "つ"}, {"start": 1519, "duration": 303, "text": "か"}, {"start": 1822, "duration": 203, "text": "み"}, {"start": 2025, "duration": 202, "text": "始"}, {"start": 2227, "duration": 203, "text": "め"}, {"start": 2430, "duration": 556, "text": "た"}]}, {"start": 32776, "duration": 3075, "content": [{"start": 0, "duration": 201, "text": "あ"}, {"start": 201, "duration": 202, "text": "な"}, {"start": 403, "duration": 202, "text": "た"}, {"start": 605, "duration": 555, "text": "へ"}, {"start": 1160, "duration": 302, "text": "と"}, {"start": 1462, "duration": 252, "text": "抱"}, {"start": 1714, "duration": 303, "text": "く"}, {"start": 2017, "duration": 151, "text": "こ"}, {"start": 2168, "duration": 202, "text": "の"}, {"start": 2370, "duration": 151, "text": "感"}, {"start": 2521, "duration": 151, "text": "情"}, {"start": 2672, "duration": 403, "text": "も"}]}, {"start": 36021, "duration": 2722, "content": [{"start": 0, "duration": 251, "text": "今"}, {"start": 251, "duration": 153, "text": "言"}, {"start": 404, "duration": 151, "text": "叶"}, {"start": 555, "duration": 202, "text": "に"}, {"start": 757, "duration": 402, "text": "代"}, {"start": 1159, "duration": 151, "text": "わ"}, {"start": 1310, "duration": 403, "text": "っ"}, {"start": 1713, "duration": 455, "text": "て"}, {"start": 2168, "duration": 554, "text": "く"}]}, {"start": 39035, "duration": 6164, "content": [{"start": 0, "duration": 203, "text": "未"}, {"start": 203, "duration": 202, "text": "知"}, {"start": 405, "duration": 251, "text": "な"}, {"start": 656, "duration": 759, "text": "る"}, {"start": 1415, "duration": 202, "text": "世"}, {"start": 1617, "duration": 556, "text": "界"}, {"start": 2173, "duration": 302, "text": "の"}, {"start": 2475, "duration": 606, "text": "梦"}, {"start": 3081, "duration": 453, "text": "か"}, {"start": 3534, "duration": 1315, "text": "ら"}, {"start": 4849, "duration": 152, "text": "目"}, {"start": 5001, "duration": 153, "text": "覚"}, {"start": 5154, "duration": 455, "text": "め"}, {"start": 5609, "duration": 555, "text": "て"}]}, {"start": 45725, "duration": 5660, "content": [{"start": 0, "duration": 152, "text": "こ"}, {"start": 152, "duration": 302, "text": "の"}, {"start": 454, "duration": 202, "text": "羽"}, {"start": 656, "duration": 254, "text": "を"}, {"start": 910, "duration": 201, "text": "広"}, {"start": 1111, "duration": 304, "text": "げ"}, {"start": 1415, "duration": 354, "text": "飞"}, {"start": 1769, "duration": 505, "text": "び"}, {"start": 2274, "duration": 605, "text": "立"}, {"start": 2879, "duration": 2781, "text": "つ"}]}, {"start": 51467, "duration": 6221, "content": [{"start": 0, "duration": 151, "text": "羽"}, {"start": 151, "duration": 201, "text": "ば"}, {"start": 352, "duration": 202, "text": "た"}, {"start": 554, "duration": 556, "text": "い"}, {"start": 1110, "duration": 607, "text": "た"}, {"start": 1717, "duration": 1265, "text": "ら"}, {"start": 2982, "duration": 203, "text": "戻"}, {"start": 3185, "duration": 151, "text": "ら"}, {"start": 3336, "duration": 912, "text": "な"}, {"start": 4248, "duration": 557, "text": "い"}, {"start": 4805, "duration": 203, "text": "と"}, {"start": 5008, "duration": 253, "text": "言"}, {"start": 5261, "duration": 254, "text": "っ"}, {"start": 5515, "duration": 706, "text": "て"}]}, {"start": 57688, "duration": 6470, "content": [{"start": 0, "duration": 201, "text": "目"}, {"start": 201, "duration": 202, "text": "指"}, {"start": 403, "duration": 253, "text": "し"}, {"start": 656, "duration": 607, "text": "た"}, {"start": 1263, "duration": 556, "text": "の"}, {"start": 1819, "duration": 1264, "text": "は"}, {"start": 3083, "duration": 302, "text": "白"}, {"start": 3385, "duration": 506, "text": "い"}, {"start": 3891, "duration": 253, "text": "白"}, {"start": 4144, "duration": 455, "text": "い"}, {"start": 4599, "duration": 354, "text": "あ"}, {"start": 4953, "duration": 505, "text": "の"}, {"start": 5458, "duration": 1012, "text": "云"}]}, {"start": 64158, "duration": 6254, "content": [{"start": 0, "duration": 150, "text": "突"}, {"start": 150, "duration": 202, "text": "き"}, {"start": 352, "duration": 251, "text": "抜"}, {"start": 603, "duration": 757, "text": "け"}, {"start": 1360, "duration": 454, "text": "た"}, {"start": 1814, "duration": 1060, "text": "ら"}, {"start": 2874, "duration": 301, "text": "见"}, {"start": 3175, "duration": 253, "text": "つ"}, {"start": 3428, "duration": 403, "text": "か"}, {"start": 3831, "duration": 454, "text": "る"}, {"start": 4285, "duration": 454, "text": "と"}, {"start": 4739, "duration": 202, "text": "知"}, {"start": 4941, "duration": 405, "text": "っ"}, {"start": 5346, "duration": 908, "text": "て"}]}, {"start": 70490, "duration": 2810, "content": [{"start": 0, "duration": 127, "text": "振"}, {"start": 127, "duration": 304, "text": "り"}, {"start": 431, "duration": 305, "text": "切"}, {"start": 736, "duration": 454, "text": "る"}, {"start": 1190, "duration": 608, "text": "ほ"}, {"start": 1798, "duration": 1012, "text": "ど"}]}, {"start": 73300, "duration": 3437, "content": [{"start": 0, "duration": 304, "text": "苍"}, {"start": 304, "duration": 607, "text": "い"}, {"start": 911, "duration": 252, "text": "苍"}, {"start": 1163, "duration": 455, "text": "い"}, {"start": 1618, "duration": 454, "text": "あ"}, {"start": 2072, "duration": 405, "text": "の"}, {"start": 2477, "duration": 960, "text": "空"}]}, {"start": 76737, "duration": 3139, "content": [{"start": 0, "duration": 252, "text": "苍"}, {"start": 252, "duration": 406, "text": "い"}, {"start": 658, "duration": 201, "text": "苍"}, {"start": 859, "duration": 559, "text": "い"}, {"start": 1418, "duration": 455, "text": "あ"}, {"start": 1873, "duration": 407, "text": "の"}, {"start": 2280, "duration": 859, "text": "空"}]}, {"start": 79878, "duration": 100000, "content": [{"start": 0, "duration": 106, "text": "苍"}, {"start": 106, "duration": 555, "text": "い"}, {"start": 661, "duration": 202, "text": "苍"}, {"start": 863, "duration": 505, "text": "い"}, {"start": 1368, "duration": 402, "text": "あ"}, {"start": 1770, "duration": 353, "text": "の"}, {"start": 2123, "duration": 2982, "text": "空"}]}], "sourceLines": ["[id:$01F111A3]", "[ar:日本ACG]", "[ti:ブルーバード]", "[by:]", "[hash:5da2e0f88d81c06f26c2a4da9bb8b680]", "[al:]", "[sign:]", "[qq:]", "[total:100000]", "[offset:500]", "[language:eyJjb250ZW50IjpbeyJsYW5ndWFnZSI6MCwibHlyaWNDb250ZW50IjpbWyJcdTYyMTFcdThCRjRcdTRFMDBcdTY1RTZcdTYzMkZcdTdGQzVcdTk4REVcdTdGRDRcdTVDMzFcdTRFMERcdTRGMUFcdTU2REVcdTY3NjUiXSxbIlx1NTQxMVx1NUY4MFx1NzY4NFx1NzZFRVx1NjgwN1x1NjYyRlx1OTBBM1x1ODUxQVx1ODRERFx1NzY4NFx1ODJDRFx1N0E3OSJdLFsiXHU4RkQ4XHU2NzJBXHU4QkIwXHU0RjRGXHU4RkQ5XHU2MEIyXHU0RjI0Il0sWyJcdTczQjBcdTU3MjhcdTVGMDBcdTU5Q0JcdTRFODZcdTg5RTNcdTRFODZcdTc1REJcdTgyRTYiXSxbIlx1NjAwMFx1Nzc0MFx1NUJGOVx1NEY2MFx1NzY4NFx1OEZEOVx1NEVGRFx1NjExRlx1NjBDNSJdLFsiXHU3M0IwXHU1NzI4XHU1MzE2XHU0RTNBXHU4QTAwXHU4QkVEIl0sWyJcdTRFQ0VcdTY3MkFcdTc3RTVcdTRFMTZcdTc1NENcdTc2ODRcdTY4QTZcdTRFMkRcdThCQTlcdTYyMTFcdTg5QzlcdTkxOTIiXSxbIlx1NUM1NVx1NUYwMFx1N0ZDNVx1ODE4MFx1OThERVx1NTQxMVx1OEZEQ1x1NjVCOSJdLFsiXHU2MjExXHU4QkY0XHU0RTAwXHU2NUU2XHU2MzJGXHU3RkM1XHU5OERFXHU3RkQ0XHU1QzMxXHU0RTBEXHU0RjFBXHU1NkRFXHU2NzY1Il0sWyJcdTU0MTFcdTVGODBcdTc2ODRcdTc2RUVcdTY4MDdcdTY2MkZcdTkwQTNcdTk2RUFcdTc2N0RcdTc2ODRcdTk2RUFcdTc2N0RcdTc2ODRcdTRFOTEiXSxbIlx1NjIxMVx1NzdFNVx1OTA1M1x1N0E3Rlx1OEZDN1x1NUI4M1x1NUMzMVx1ODBGRFx1NjI3RVx1NTIzMCJdLFsiXHU3QUVEXHU1MjlCXHU2NDQ2XHU4MTMxIl0sWyJcdTg1MUFcdTg0RERcdTc2ODRcdTg1MUFcdTg0RERcdTc2ODRcdTU5MjlcdTdBN0EiXSxbIlx1ODUxQVx1ODRERFx1NzY4NFx1ODUxQVx1ODRERFx1NzY4NFx1NTkyOVx1N0E3QSJdLFsiXHU4NTFBXHU4NEREXHU3Njg0XHU4NTFBXHU4NEREXHU3Njg0XHU1OTI5XHU3QTdBIl1dLCJ0eXBlIjoxfV0sInZlcnNpb24iOjF9]", "[868,6369]<0,153,0>羽<153,202,0>ば<355,151,0>た<506,757,0>い<1263,759,0>た<2022,1214,0>ら<3236,152,0>戻<3388,150,0>ら<3538,810,0>な<4348,505,0>い<4853,152,0>と<5005,203,0>言<5208,253,0>っ<5461,908,0>て", "[7237,6663]<0,203,0>目<203,151,0>指<354,150,0>し<504,707,0>た<1211,655,0>の<1866,1159,0>は<3025,203,0>苍<3228,557,0>い<3785,201,0>苍<3986,606,0>い<4592,202,0>あ<4794,656,0>の<5450,1213,0>空", "[26455,2985]<0,101,0>悲<101,202,0>し<303,152,0>み<455,151,0>は<606,203,0>ま<809,456,0>だ<1265,253,0>覚<1518,203,0>え<1721,253,0>ら<1974,354,0>れ<2328,657,0>ず", "[29440,2986]<0,154,0>切<154,151,0>な<305,151,0>さ<456,355,0>は<811,201,0>今<1012,507,0>つ<1519,303,0>か<1822,203,0>み<2025,202,0>始<2227,203,0>め<2430,556,0>た", "[32776,3075]<0,201,0>あ<201,202,0>な<403,202,0>た<605,555,0>へ<1160,302,0>と<1462,252,0>抱<1714,303,0>く<2017,151,0>こ<2168,202,0>の<2370,151,0>感<2521,151,0>情<2672,403,0>も", "[36021,2722]<0,251,0>今<251,153,0>言<404,151,0>叶<555,202,0>に<757,402,0>代<1159,151,0>わ<1310,403,0>っ<1713,455,0>て<2168,554,0>く", "[39035,6164]<0,203,0>未<203,202,0>知<405,251,0>な<656,759,0>る<1415,202,0>世<1617,556,0>界<2173,302,0>の<2475,606,0>梦<3081,453,0>か<3534,1315,0>ら<4849,152,0>目<5001,153,0>覚<5154,455,0>め<5609,555,0>て", "[45725,5660]<0,152,0>こ<152,302,0>の<454,202,0>羽<656,254,0>を<910,201,0>広<1111,304,0>げ<1415,354,0>飞<1769,505,0>び<2274,605,0>立<2879,2781,0>つ", "[51467,6221]<0,151,0>羽<151,201,0>ば<352,202,0>た<554,556,0>い<1110,607,0>た<1717,1265,0>ら<2982,203,0>戻<3185,151,0>ら<3336,912,0>な<4248,557,0>い<4805,203,0>と<5008,253,0>言<5261,254,0>っ<5515,706,0>て", "[57688,6470]<0,201,0>目<201,202,0>指<403,253,0>し<656,607,0>た<1263,556,0>の<1819,1264,0>は<3083,302,0>白<3385,506,0>い<3891,253,0>白<4144,455,0>い<4599,354,0>あ<4953,505,0>の<5458,1012,0>云", "[64158,6254]<0,150,0>突<150,202,0>き<352,251,0>抜<603,757,0>け<1360,454,0>た<1814,1060,0>ら<2874,301,0>见<3175,253,0>つ<3428,403,0>か<3831,454,0>る<4285,454,0>と<4739,202,0>知<4941,405,0>っ<5346,908,0>て", "[70490,2810]<0,127,0>振<127,304,0>り<431,305,0>切<736,454,0>る<1190,608,0>ほ<1798,1012,0>ど", "[73300,3437]<0,304,0>苍<304,607,0>い<911,252,0>苍<1163,455,0>い<1618,454,0>あ<2072,405,0>の<2477,960,0>空", "[76737,3139]<0,252,0>苍<252,406,0>い<658,201,0>苍<859,559,0>い<1418,455,0>あ<1873,407,0>の<2280,859,0>空", "[79878,100000]<0,106,0>苍<106,555,0>い<661,202,0>苍<863,505,0>い<1368,402,0>あ<1770,353,0>の<2123,2982,0>空", ""]}'], 
+	['audioName', 	 'string', '日本ACG-ブルーバード'], // audio/bgs/xxx.ogg
+	['lyricOffset',  'number', -500], // 歌词时间偏移(单位:ms)
+	// ？krc数据里 也能设置 offset ...
+	// ？暂时不读取 krc数据 的 offset ...
+	
+	['widthPadding', 'number', 0], 
+	['lineSpace', 	 'number', 10], 
+
+	//['waitPointNum', 'number', 4], 
+	['minWaitPoint', 'number', 3], 
+	['maxWaitPoint', 'number', 5], 
+
+	['pointRadius',  'number', 12], 
+	['pointColor', 	 'string', 'blue'], 
+	['pointWSpace',  'number', 10], 
+	['pointHSpace',  'number', 6], 
+
+	//['playSpeed', 	'number', 2], // 播放速度(像素/帧)
+	['lineWidth', 	 'number', 4], // TODO : uLineWidth
+	['uLineColor', 	 'string', '#FFFFFF'], 
+	['uTextColor', 	 'string', '#0000FF'], 
+	//['dLineWidth', 	 'number', 4], // TODO
+	['dLineColor', 	 'string', '#000000'], 
+	['dTextColor', 	 'string', '#FFFFFF'], 
+];
+
+
+// --------------------------------
+// 初始化动画对象
+
+MK_TextMakerAnim_Karaoke.prototype.onCreate = function() {
+	MK_TextMakerAnimBase.prototype.onCreate.apply(this, arguments);
+
+	this._audioName = '';
+	this._krcData = null;
+	this._lyricData = null;
+
+	//this._lyricTargets = [];
+	//this._lyricLineTargets = [];
+	this._lyricLineTargets = {};
+
+	this._drawingState = {
+		drawLineIndex : 1, 
+		drawTextIndex : 1, 
+		drawX : 0, 
+	};
+
+	//this._playingLineNum = 0;
+	//this._playingTextNum = 0;
+	//this._playingState = {
+	//	lineNum : 0, 
+	//	textNum : 0, 
+	//	isTopLine : true, // 在第一行播放
+	//};
+	//this._playingState = null;
+	this._playingState = {
+		//lineNum : 1, 
+		//textNum : 1, 
+		lineIndex : 0, 
+		textIndex : 0, 
+		isTopLine : true, // 在第一行播放
+
+		//waitCount : 0, 
+		waitPointNum : 0, 
+		waitPointShowedNum : 0, // 当前显示数量 显示数据 (TODO : ？移到 showState ...)
+		waiting : false, 
+
+		seek : 0, 
+		playing : false, // 未使用
+		played : false, 
+
+		lineStarted : false, 
+		textStarted : false, 
+		lineFinished : false, 
+		textFinished : false, 
+
+		topLineIndex : 0, // 上行显示的歌词行
+		botLineIndex : 0, // 下行显示的歌词行 显示数据 (TODO : ？移到 showState ...)
+		// ？要同时记录上行和下行 ...
+		// ？而不是只记录当前播放行是在上行还是在下行 ...
+
+		//drawLineIndex : 1, 
+		//drawTextIndex : 1, 
+		//drawX : 0, 
+		//drawY : 0, 
+		//widthPadding : this.getParam('widthPadding'), 
+		//left : 0, 
+		//right : 0, 
+		// ？移到 drawingState ...
+	};
+
+	//this._playingWaitCount = 0;
+
+	this._minWaitSec = this.getParam('minWaitPoint') * 1;
+	this._maxWaitSec = this.getParam('maxWaitPoint') * 1;
+
+	this._bgsObject = null;
+	this._bgsBuffer = null;
+
+	this.initKrcData();
+};
+
+MK_TextMakerAnim_Karaoke.prototype.initKrcData = function() {
+	this._audioName = this.getParam('audioName');
+
+	var krcContents = this.getParam('krcContents');
+	try {
+		this._krcData = JSON.parse(krcContents);
+		//this._lyricData = this._krcData.lyricLines;
+		this.initLyricData();
+	}
+	catch (e) {
+		this._krcData = null;
+		this._lyricData = null;
+		console.error(`error parsed krc contents.`, krcContents);
+	}
+};
+
+MK_TextMakerAnim_Karaoke.prototype.initLyricData = function() {
+	var lyricData = JSON.parse(JSON.stringify(this._krcData.lyricLines));
+
+	var lyricOffset = this.getParam('lyricOffset');
+	lyricData.forEach(line => line && (line.start += lyricOffset));
+
+	// ...
+
+	this._lyricData = lyricData;
+};
+
+
+// --------------------------------
+// 创建歌词行的字母精灵
+
+MK_TextMakerAnim_Karaoke.prototype.createLyricLineSprites = function(lineIndex) {
+	if (!this._lyricLineTargets[lineIndex]) {
+		// 不存在时绘制
+		if (lineIndex === 0) {
+			// 等待点
+
+			// TODO : createXXX_waitPoint 方法
+
+			//var waitPointNum = this.getParam('waitPointNum');
+			var maxWaitPoint = this.getParam('maxWaitPoint');
+			var r = this.getParam('pointRadius');
+			var color = this.getParam('pointColor');
+			var pointWSpace = this.getParam('pointWSpace');
+			var state = this._drawingState;
+
+			var targets = [];
+			this._lyricLineTargets[lineIndex] = targets;
+
+			state.drawLineIndex = lineIndex;
+			//state.drawX = state.widthPadding;
+			state.drawX = 0;
+			// ？最初绘制时 只需要考虑各个目标的相对位置 不需要考虑整行的位置 ...
+			// ？整行的位置在显示时进行设置 ...
+			//for (var i = 1; i <= waitPointNum; i++) {
+			for (var i = 1; i <= maxWaitPoint; i++) {
+				state.drawTextIndex = i;
+				this.addExtraContent('circle', state.drawX + r, r, r, color);
+				//this.addExtraContent('circle', state.drawX + r, 0, r, color);
+				// TODO : ？如何 在绘制后直接返回绘制的精灵 ...
+
+				var obj = targets[targets.length-1];
+				state.drawX += obj.data.spriteData.width + pointWSpace;
+			}
+
+			this.initLyricLineSprites(lineIndex);
+		}
+		else {
+			// 歌词
+
+			// TODO : createXXX_lyric 方法
+
+			var lineWidth  = this.getParam('lineWidth');
+			var uLineColor = this.getParam('uLineColor');
+			var uTextColor = this.getParam('uTextColor');
+			var dLineColor = this.getParam('dLineColor');
+			var dTextColor = this.getParam('dTextColor');
+			var state = this._drawingState;
+			var lyricLineData = this._lyricData[lineIndex-1];
+
+			if (!lyricLineData) {
+				return ;
+			}
+
+			/*
+			// 低层
+			var lowerTargets = [];
+			this._lyricLineTargets[lineIndex] = lowerTargets;
+
+			state.drawLineIndex = lineIndex;
+			state.drawX = 0;
+			for (var i = 1, l = lyricLineData.content.length; i <= l; i++) {
+				var textData = lyricLineData.content[i-1];
+				state.drawTextIndex = i;
+
+				this.addExtraContent('text', textData.text, state.drawX, 0, 
+					dTextColor, lineWidth, dLineColor);
+
+				var obj = lowerTargets[lowerTargets.length-1];
+				state.drawX += obj.data.spriteData.width;
+				//Object.assign(obj.var, textData);
+				obj.var.start = textData.start;
+				obj.var.duration = textData.duration;
+				obj.var.text = textData.text;
+			}
+
+			// 高层
+			var upperTargets = [];
+			this._lyricLineTargets['UP'+lineIndex] = upperTargets;
+
+			state.drawLineIndex = 'UP'+lineIndex;
+			state.drawX = 0;
+			for (var i = 1, l = lyricLineData.content.length; i <= l; i++) {
+				var textData = lyricLineData.content[i-1];
+				state.drawTextIndex = i;
+
+				this.addExtraContent('text', textData.text, state.drawX, 0, 
+					uTextColor, lineWidth, uLineColor);
+
+				var obj = upperTargets[upperTargets.length-1];
+				state.drawX += obj.data.spriteData.width;
+				//Object.assign(obj.var, textData);
+				obj.var.start = textData.start;
+				obj.var.duration = textData.duration;
+				obj.var.text = textData.text;
+			}
+			*/
+			// ？兼容合并 ...
+
+			for (var upperLayer = 0; upperLayer <= 1; upperLayer++) {
+				var realLineIndex = [lineIndex, 'UP'+lineIndex][upperLayer];
+				var targets = [];
+				this._lyricLineTargets[realLineIndex] = targets;
+
+				state.drawLineIndex = realLineIndex;
+				state.drawX = 0;
+				for (var i = 1, l = lyricLineData.content.length; i <= l; i++) {
+					var textData = lyricLineData.content[i-1];
+					state.drawTextIndex = i;
+
+					this.addExtraContent('text', textData.text, state.drawX, 0, 
+						[dTextColor, uTextColor][upperLayer], 
+						lineWidth, 
+						[dLineColor, uLineColor][upperLayer]);
+
+					var obj = targets[targets.length-1];
+					state.drawX += obj.data.spriteData.width;
+					//Object.assign(obj.var, textData);
+					obj.var.start = textData.start;
+					obj.var.duration = textData.duration;
+					obj.var.text = textData.text;
+				}
+			}
+
+			this.initLyricLineSprites(lineIndex);
+		}
+	}
+	else {
+		// 存在时初始化它们
+		this.initLyricLineSprites(lineIndex);
+	}
+};
+
+MK_TextMakerAnim_Karaoke.prototype.initLyricLineSprites = function(lineIndex) {
+	//if (lineIndex === 0) {
+	//	var targets = this._lyricLineTargets[lineIndex];
+	//}
+	//else {
+	//	for (var upperLayer = 0; upperLayer <= 1; upperLayer++) {
+	//		var targets = this._lyricLineTargets[ [lineIndex, 'UP'+lineIndex][lineIndex] ];
+	//		targets.forEach(obj => obj && obj.sprite && this.initLyricSprite(obj.sprite), this);
+	//	}
+	//}
+
+	var targetsList = [];
+	if (lineIndex === 0) {
+		//targetsList.push(this._lyricLineTargets[lineIndex]);
+		targetsList.push(this.getLyricLineSprites(lineIndex));
+	}
+	else {
+		for (var upperLayer = 0; upperLayer <= 1; upperLayer++) {
+			//targetsList.push(this._lyricLineTargets[ [lineIndex, 'UP'+lineIndex][upperLayer] ]);
+			targetsList.push(this.getLyricLineSprites(lineIndex, upperLayer));
+		}
+	}
+
+	//targetsList.forEach(targets => 
+	targetsList.forEach((targets, upperLayer) => 
+		targets.forEach(obj => 
+			//obj && obj.sprite && this.initLyricSprite(obj.sprite), this));
+			//obj && obj.sprite && this.initLyricSprite(obj.sprite, upperLayer), this));
+			obj && obj.sprite
+				 && (lineIndex === 0) 
+					 ? this.initWaitPointSprite(obj.sprite)
+					 : this.initLyricSprite(obj.sprite, upperLayer)
+		, this));
+		// ？设置 sprite 的 frame ...
+
+	// ？和 hideLyricLineSprites 一样 ...
+};
+//MK_TextMakerAnim_Karaoke.prototype.initLyricSprite = function(sprite) {
+//	sprite.visible = false;
+//};
+MK_TextMakerAnim_Karaoke.prototype.initLyricSprite = function(sprite, isTopLine) {
+	sprite.visible = false;
+	isTopLine = arguments.length < 2 ? true : isTopLine;
+	if (isTopLine) {
+		sprite.setFrame(0, 0, 0, 0);
+	}
+};
+MK_TextMakerAnim_Karaoke.prototype.initWaitPointSprite = function(sprite) {
+	sprite.visible = false;
+};
+
+
+// --------------------------------
+// 获取歌词行的字母精灵
+
+/*
+MK_TextMakerAnim_Karaoke.prototype.getLyricLineSprites = function(lineIndex) {
+	return this._lyricLineTargets[lineIndex];
+};
+
+//MK_TextMakerAnim_Karaoke.prototype.getOrCreateLyricLineSprites = function(lineIndex, isTopLine) {
+MK_TextMakerAnim_Karaoke.prototype.getOrCreateLyricLineSprites = function(lineIndex) {
+	var targets = this.getLyricLineSprites(lineIndex);
+	if (!targets) {
+		var lineIndexForCreate = typeof lineIndex === 'string'
+				 && lineIndex.startsWith('UP')
+				 && !Number.isNaN(Number.parseInt(lineIndex.slice('UP'.length)))
+			 ? Number.parseInt(lineIndex.slice('UP'.length))
+			 : lineIndex;
+		this.createLyricLineSprites(lineIndexForCreate);
+
+		targets = this._lyricLineTargets[lineIndex];
+	}
+	return targets;
+};
+*/
+
+// ？将 计算 realLineIndex 的逻辑 放到基础的方法里 ...
+
+MK_TextMakerAnim_Karaoke.prototype.getLyricLineSprites = function(lineIndex, upperLayer) {
+	var realLineIndex = !!upperLayer ? 'UP'+lineIndex : lineIndex;
+	return this._lyricLineTargets[realLineIndex];
+};
+
+MK_TextMakerAnim_Karaoke.prototype.getOrCreateLyricLineSprites = function(lineIndex, upperLayer) {
+	//var realLineIndex = !!upperLayer ? 'UP'+lineIndex : lineIndex;
+	//var targets = this.getLyricLineSprites(realLineIndex);
+	var targets = this.getLyricLineSprites(lineIndex, upperLayer);
+	if (!targets) {
+		this.createLyricLineSprites(lineIndex);
+		//targets = this.getLyricLineSprites(realLineIndex);
+		targets = this.getLyricLineSprites(lineIndex, upperLayer);
+	}
+	return targets;
+};
+
+
+// --------------------------------
+// 绘制歌词字母精灵
+
+MK_TextMakerAnim_Karaoke.prototype.drawExtraContent = function(type, ...args) {
+	MK_TextMakerAnimBase.prototype.drawExtraContent.apply(this, arguments);
+	//if (this._msgWindow) {
+	// ？放到各type的方法里判断 ...
+	// ？因为 有可能 存在 不需要 this._msgWindow 的绘制类型 ...
+		if (type == 'text') {
+			this.drawExtraContent_text(...args);
+		}
+		else if (type == 'circle') {
+			this.drawExtraContent_circle(...args);
+		}
+		else {
+			console.warn(`unknown drawExtraContent type "${type}".`);
+		}
+	//}
+};
+//MK_TextMakerAnim_Karaoke.prototype.drawExtraContent_text = function(text, x, y, maxWidth, align) {
+MK_TextMakerAnim_Karaoke.prototype.drawExtraContent_text = function(text, x, y, 
+																	color, outlineWidth, outlineColor, 
+																	maxWidth, align) {
+	if (this._msgWindow) {
+		//this._msgWindow.drawText(text, x, y, maxWidth, align);
+
+		// ？window.processNormalCharacter ...
+		// ？不直接使用 window.processNormalCharacter 进行绘制 ...
+		// ？防止歌词文字当做特殊字串被解析 ...
+
+		//var w = this._msgWindow.textWidth(c);
+		//this.contents.drawText(c, x, y, w * 2, this._msgWindow.lineHeight());
+
+		//if (color) {
+		//	var oldColor = this._msgWindow.contents.textColor;
+		//	this._msgWindow.changeTextColor(color);
+		//	this._msgWindow.drawText(text, x, y, maxWidth, align);
+		//	this._msgWindow.changeTextColor(oldColor);
+		//}
+		//else {
+		//	this._msgWindow.drawText(text, x, y, maxWidth, align);
+		//}
+
+		var oldColor = this._msgWindow.contents.textColor;
+		var oldOutlineWidth = this._msgWindow.contents.outlineWidth;
+		var oldOutlineColor = this._msgWindow.contents.outlineColor;
+
+		this._msgWindow.changeTextColor(color || oldColor);
+		this._msgWindow.contents.outlineColor = outlineColor || oldOutlineColor;
+		this._msgWindow.contents.outlineWidth = outlineWidth || oldOutlineWidth;
+
+		this._msgWindow.drawText(text, x, y, maxWidth, align);
+
+		this._msgWindow.changeTextColor(oldColor);
+		this._msgWindow.contents.outlineColor = oldOutlineColor;
+		this._msgWindow.contents.outlineWidth = oldOutlineWidth;
+	}
+};
+MK_TextMakerAnim_Karaoke.prototype.drawExtraContent_circle = function(x, y, radius, color) {
+	if (this._msgWindow) {
+		this._msgWindow.contents.drawCircle(x, y, radius, color);
+	}
+};
+
+
+MK_TextMakerAnim_Karaoke.prototype.onInitExtraTarget = function(obj, ...args) {
+	MK_TextMakerAnimBase.prototype.onInitExtraTarget.apply(this, arguments);
+	if (!obj) return ;
+	var s = obj.sprite;
+	var v = obj.var;
+
+	// ？TODO : 绘制额外内容时 可以设置回调方法 或者 储存其他数据 ...
+
+	// ？暂时 认为是按顺序绘制的 所以按顺序设置歌词精灵 ...
+	// ？或者 绘制前把需要储存的数据写在对象里 初始化目标对象时获取这些数据 ...
+
+	var lineIndex = this._drawingState.drawLineIndex;
+	var textIndex = this._drawingState.drawTextIndex;
+
+	v.lineIndex = lineIndex;
+	v.textIndex = textIndex;
+	// ？TODO : 把 newExtraTargetData 的结构 写到 TextMakerAnimBase 里 ...
+
+	// TODO : 写入对应歌词字的 start, duration
+
+	if (!this._lyricLineTargets[lineIndex]) {
+		this._lyricLineTargets[lineIndex] = [];
+	}
+	this._lyricLineTargets[lineIndex][textIndex] = obj;
+	//this._lyricTargets[lineIndex][textIndex - 1] = obj;
+
+	//if (s) {
+	//	//s.visible = false;
+	//	this.initLyricSprite(s);
+	//	// ？初始化时保留x坐标 其他信息暂不修改 ...
+	//}
+};
+
+
+// --------------------------------
+// 计算歌词行字母精灵的位置
+
+// 计算歌词行精灵的实际位置，需要已绘制
+//MK_TextMakerAnim_Karaoke.prototype.calLyricLinePosition = function(lineIndex, isTopLine) {
+//	var targets = this._lyricLineTargets[lineIndex];
+MK_TextMakerAnim_Karaoke.prototype.calLyricLinePosition = function(lineIndex, isTopLine, upperLayer) {
+	var targets = this.getLyricLineSprites(lineIndex, upperLayer);
+	//if (targets && targets.length > 0) {
+	if (targets && targets.length > 1) {
+		var widthPadding = this.getParam('widthPadding');
+		var lineSpace = this.getParam('lineSpace');
+		var pointRadius = this.getParam('pointRadius'); 
+		var pointHSpace = this.getParam('pointHSpace');
+
+		var contentsWidth = this._msgWindow.contentsWidth();
+		var contentsHeight = this._msgWindow.contentsHeight();
+		var lineHeight = this._msgWindow.lineHeight();
+
+		var heightPadding = Math.floor((contentsHeight - 2 * lineHeight - lineSpace) / 2);
+		if (lineIndex === 0) {
+			var lineX = widthPadding;
+			//var lineY = Math.floor((contentsHeight - 2 * lineHeight - lineSpace) / 2) - lineHeight - lineSpace;
+			//var heightPadding = Math.floor((contentsHeight - 2 * lineHeight - lineSpace) / 2);
+			//var lineY = heightPadding - lineHeight - lineSpace;
+			//var lineY = heightPadding - pointSpace;
+			var lineY = heightPadding - 2 * pointRadius - pointHSpace;
+			return { x : lineX, y : lineY };
+		}
+		else {
+			isTopLine = arguments.length >= 2 ? isTopLine : true;
+
+			//var minX = targets[0].x;
+			//var minX = targets[1].sprite.x;
+			//var maxX = targets[targets.length-1].sprite.x + targets[targets.length-1].sprite.width;
+			// ？sprite._frame 会影响 sprite.width/height ...
+			// FINISH : 宽度使用初始宽
+			var minX = targets[1].data.spriteData.x;
+			var maxX = targets[targets.length-1].data.spriteData.x + targets[targets.length-1].data.spriteData.width;
+			//var heightPadding = Math.floor((contentsHeight - 2 * lineHeight - lineSpace) / 2);
+			
+			//var currentX = targets[0].x;
+			//var currentY = targets[0].y;
+
+			//if (isTopLine) {
+			//	var x = widthPadding;
+			//	var y = heightPadding;
+			//	return { x : x - currentX, y : y - currentY };
+			//}
+			//else {
+			//	var x = contentsWidth - widthPadding - (maxX - minX);
+			//	var y = heightPadding + lineHeight + lineSpace;
+			//	return { x : x - currentX, y : y - currentY };
+			//}
+
+			var lineX = isTopLine
+				 ? widthPadding
+				 : contentsWidth - widthPadding - (maxX - minX);
+			var lineY = isTopLine
+				 ? heightPadding
+				 : heightPadding + lineHeight + lineSpace;
+			//return {
+			//	x : lineX - currentX, 
+			//	y : lineY - currentY, 
+			//};
+			return { x : lineX, y : lineY };
+		}
+	}
+	else {
+		return { x : 0, y : 0 };
+	}
+};
+
+// 计算歌词行的y坐标，不需要已绘制
+MK_TextMakerAnim_Karaoke.prototype.calLyricLineY = function(lineIndex, isTopLine) {
+	var widthPadding = this.getParam('widthPadding');
+	var lineSpace = this.getParam('lineSpace');
+	var pointRadius = this.getParam('pointRadius'); 
+	var pointHSpace = this.getParam('pointHSpace');
+
+	var contentHeight = this._msgWindow.contentsHeight();
+	var lineHeight = this._msgWindow.lineHeight();
+	var heightPadding = Math.floor((contentHeight - 2 * lineHeight - lineSpace) / 2);
+
+	if (lineIndex === 0) {
+		//return heightPadding - lineHeight - lineSpace;
+		//return heightPadding - pointSpace;
+		return heightPadding - 2 * pointRadius - pointHSpace;
+	}
+	else {
+		isTopLine = arguments.length >= 2 ? isTopLine : true;
+		return isTopLine ? heightPadding : heightPadding + lineHeight + lineSpace;
+	}
+};
+
+
+// --------------------------------
+// 显示和隐藏歌词行
+
+MK_TextMakerAnim_Karaoke.prototype.showLyricLineSprites = function(lineIndex, isTopLine) {
+	if (lineIndex <= 0) return ; // TODO : 0 行
+	//console.log('show', lineIndex, isTopLine ? 'top' : 'bot');
+
+	var targetsList = [];
+	var offsetList = [];
+	if (lineIndex === 0) {
+		//targetsList.push(this._lyricLineTargets[lineIndex]);
+		targetsList.push(this.getOrCreateLyricLineSprites(lineIndex));
+		//offsetList.push(this.calLyricLinePosition(lineIndex, isTopLine));
+		offsetList.push(this.calLyricLinePosition(lineIndex));
+	}
+	else {
+		isTopLine = arguments.length >= 2 ? isTopLine : true;
+		for (var upperLayer = 0; upperLayer <= 1; upperLayer++) {
+			//var realLineIndex = [lineIndex, 'UP'+lineIndex][upperLayer];
+			//targetsList.push(this._lyricLineTargets[realLineIndex]);
+			//targetsList.push(this.getOrCreateLyricLineSprites(realLineIndex));
+			targetsList.push(this.getOrCreateLyricLineSprites(lineIndex, !!upperLayer));
+			offsetList.push(this.calLyricLinePosition(lineIndex, isTopLine, !!upperLayer));
+		}
+	}
+
+	targetsList.forEach((targets, targetIndex) => 
+		//targets && targets.forEach(function(obj, i) {
+		targets && offsetList[targetIndex] && targets.forEach(function(obj, i) {
+			//if (obj && obj.sprite && offsetList[i]) {
+			//if (obj && obj.sprite && offsetList[targetIndex]) {
+			if (obj && obj.sprite) {
+				var offset = offsetList[targetIndex];
+				//obj.sprite.x += offset.x;
+				//obj.sprite.y += offset.y;
+				// ？使用原位置 而不是现位置 ...
+				obj.sprite.x = obj.data.spriteData.drawX + offset.x;
+				obj.sprite.y = obj.data.spriteData.drawY + offset.y;
+				obj.sprite.visible = true;
+				//obj.sprite.setFrame(); // TODO : ...
+			}
+		}));
+};
+
+MK_TextMakerAnim_Karaoke.prototype.hideLyricLineSprites = function(lineIndex) {
+	if (lineIndex <= 0) return ; // TODO : 0 行
+	//console.log('hide', lineIndex);
+
+	var targetsList = [];
+	if (lineIndex === 0) {
+		//targetsList.push(this._lyricLineTargets[lineIndex]);
+		targetsList.push(this.getLyricLineSprites(lineIndex));
+	}
+	else {
+		for (var upperLayer = 0; upperLayer <= 1; upperLayer++) {
+			//targetsList.push(this._lyricLineTargets[ [lineIndex, 'UP'+lineIndex][upperLayer] ]);
+			targetsList.push(this.getLyricLineSprites(lineIndex, !!upperLayer));
+		}
+	}
+
+	targetsList.forEach(targets => 
+		targets && targets.forEach(function(obj) {
+			if (obj && obj.sprite) {
+				obj.sprite.visible = false;
+			}
+		}));
+};
+
+
+// --------------------------------
+// 开始播放
+
+MK_TextMakerAnim_Karaoke.prototype.onPlay = function() {
+	MK_TextMakerAnimBase.prototype.onPlay.apply(this, arguments);
+
+	//this._audioName = this.getParam('audioName');
+	//try {
+	//	this._krcData = JSON.parse(this.getParam('krcContents'));
+	//}
+	//catch (e) {
+	//	this._krcData = null;
+	//	console.error(`can't parse krc contents of audio ${this._audioName}`, e);
+	//}
+	//this.initKrcData();
+
+	// TODO : 清理之前的target
+	// ？如果保留的话 重播时就不需要重新绘制 ...
+	//this._lyricTargets = [];
+
+	/*
+	this._playingState = {
+		//lineNum : 1, 
+		//textNum : 1, 
+		lineIndex : 1, 
+		textIndex : 1, 
+		isTopLine : true, // 在第一行播放
+		waitCount : 0, 
+
+		drawLineIndex : 1, 
+		drawTextIndex : 1, 
+		drawX : 0, // TODO
+		drawY : 0, 
+		widthPadding : this.getParam('widthPadding'), 
+	};
+	*/
+
+	//this._audioBuffer ...
+
+
+	if (this.canPlay()) {
+		// 临时
+		//this.showLyricLineSprites(0);
+		//this.showLyricLineSprites(1, true);
+		//this.showLyricLineSprites(2, false);
+
+		var minWaitPoint = this.getParam('minWaitPoint');
+		var maxWaitPoint = this.getParam('maxWaitPoint');
+		//this._minWaitTime = minWaitPoint * 1000;
+		//this._maxWaitTime = maxWaitPoint * 1000;
+		this._minWaitSec = minWaitPoint * 1;
+		this._maxWaitSec = maxWaitPoint * 1;
+
+		var state = this._playingState;
+
+		state.playing = true; // 未使用
+		//state.played = true;
+		state.played = false; // ？在初始化结束后再设为 true ...
+
+		state.lineIndex = 1;
+		state.textIndex = 1;
+		state.seek = 0;
+		state.lineStarted = false;
+		state.textStarted = false;
+		state.lineFinished = false;
+		state.textFinished = false;
+		//this.updatePlayingState();
+
+		//var waitPointNum = this.getParam('waitPointNum');
+		//state.waitCount = waitPointNum * 1000;
+
+		// 初始化显示
+		//this.updateLyricLineSpritesShow(1, true);
+		//this.updateLyricLineSpritesShow(2, false);
+		this.updateOnPlaying();
+
+		this.playKaraokeAudio();
+
+		// ...
+	}
+	else {
+		this.setFlagStopOn();
+	}
+};
+
+MK_TextMakerAnim_Karaoke.prototype.canPlay = function() {
+	return this._audioName && this._lyricData;
+};
+
+/*
+MK_TextMakerAnim_Karaoke.prototype.playKaraokeAudio = function() {
+	if (this._audioName) {
+		var bgsObj = AudioManager.makeEmptyAudioObject();
+		bgsObj.name = this._audioName;
+		bgsObj.pan = 0;
+		bgsObj.pitch = 100;
+		bgsObj.volume = 90; // TODO : getParam
+		AudioManager.playBgs(bgsObj);
+	}
+};
+*/
+
+
+// --------------------------------
+// 音频
+
+MK_TextMakerAnim_Karaoke.prototype.playKaraokeAudio = function() {
+	if (this._audioName) {
+		var bgsObj = this.createAudioObject();
+
+		//if (this._bgsBuffer) {
+		//	this._bgsBuffer.stop();
+		//}
+		this.stopKaraokeAudio();
+		if (bgsObj.name) {
+			this._bgsBuffer = this.createAudioBuffer(bgsObj.name);
+		}
+		AudioManager.updateBufferParameters(this._bgsBuffer, AudioManager._bgsVolume, bgsObj);
+
+		this._bgsBuffer.play();
+	}
+};
+MK_TextMakerAnim_Karaoke.prototype.stopKaraokeAudio = function() {
+	if (this._bgsBuffer) {
+		this._bgsBuffer.stop();
+	}
+};
+MK_TextMakerAnim_Karaoke.prototype.karaokeAudioPlaying = function() {
+	return this._bgsBuffer && this._bgsBuffer.isPlaying();
+};
+MK_TextMakerAnim_Karaoke.prototype.karaokeAudioSeek = function() {
+	return this._bgsBuffer && this._bgsBuffer.isPlaying()
+		 ? this._bgsBuffer.seek()
+		 : 0;
+};
+
+MK_TextMakerAnim_Karaoke.prototype.createAudioObject = function() {
+	var bgsObj = this._bgsObject
+		 ? this._bgsObject
+		 : AudioManager.makeEmptyAudioObject();
+
+	bgsObj.name = this._audioName;
+	bgsObj.pan = 0;
+	bgsObj.pitch = 100;
+	bgsObj.volume = 90; // TODO : getParam
+
+	this._bgsObject = bgsObj;
+	return this._bgsObject;
+};
+MK_TextMakerAnim_Karaoke.prototype.createAudioBuffer = function(name) {
+	var ext = AudioManager.audioFileExt();
+	var folder = 'bgs';
+	var url = AudioManager._path + folder + '/' + encodeURIComponent(name) + ext;
+
+	//if (this.shouldUseHtml5Audio() && folder === 'bgm') {
+	//    if(this._blobUrl) Html5Audio.setup(this._blobUrl);
+	//    else Html5Audio.setup(url);
+	//    return Html5Audio;
+	//} else {
+	//    return new WebAudio(url);
+	//}
+
+	if (!this._bgsBuffer || url !== this._bgsBuffer.url) {
+		var audio = new WebAudio(url);
+		audio.autoPlay = false;
+		return audio;
+	}
+	else {
+		return this._bgsBuffer;
+	}
+};
+
+// ？按照 RMMV 的 WebAudio.seek 实现方法 audio 不播放时 或者 在加载时 仍然会计算时间 ...
+// ？导致 获取的 seek 异常 ...
+// ？真正播放时 会重新计算时间 使得 seek 正确 ...
+// ？所以判断 isPlaying() 为 false 直接返回 seek = 0 ...
+
+// TODO : 不需要自己创建和储存音频对象
+
+
+// --------------------------------
+// 播放中
+
+MK_TextMakerAnim_Karaoke.prototype.onPlaying = function() {
+	MK_TextMakerAnimBase.prototype.onPlaying.apply(this, arguments);
+
+	//this.updatePlayingState();
+	//this.updateLyricLinesSprites();
+	//this.updateLyricTextsSprites();
+	//this.updateWaitPointSprites();
+	//
+	//this.updateStopKaraokeAudio();
+
+	this.updateOnPlaying();
+};
+MK_TextMakerAnim_Karaoke.prototype.updateOnPlaying = function() {
+	this.updatePlayingState();
+	this.updateLyricLinesSprites();
+	this.updateLyricTextsSprites();
+	this.updateWaitPointSprites();
+
+	this.updateStopKaraokeAudio();
+};
+
+
+MK_TextMakerAnim_Karaoke.prototype.updatePlayingState = function() {
+	var state = this._playingState;
+	//var seek = this.audioSeek();
+	var seek = this.playingSeek();
+	var lineTextSeek = this.lyricLineTextSeek(seek);
+	state.seek = seek;
+	state.lineIndex    = lineTextSeek.lineIndex;
+	state.lineStarted  = lineTextSeek.lineStarted;
+	state.lineFinished = lineTextSeek.lineFinished;
+	state.waitPointNum = lineTextSeek.waitPointNum;
+	state.textIndex    = lineTextSeek.textIndex;
+	state.textStarted  = lineTextSeek.textStarted;
+	state.textFinished = lineTextSeek.textFinished;
+
+	state.waiting = !!state.waitPointNum > 0;
+
+	//console.log(
+	//	`(${state.lineIndex}:${state.lineStarted?'S':' '}${state.lineFinished?'F':' '})`, 
+	//	`(${state.textIndex}:${state.textStarted?'S':' '}${state.textFinished?'F':' '})`, 
+	//	`(${state.seek}) (${state.waitPointNum})`);
+};
+
+
+/*
+MK_TextMakerAnim_Karaoke.prototype.updateLyricLinesSprites = function() {
+	var state = this._playingState;
+
+	//if (state.lineIndex <= 0 || state.lineIndex > ..) {
+	// ？完全播放完后 若未找到歌词行 则lineIndex为0 而不是 超过总行数 ...
+	if (state.lineIndex <= 0) {
+		//state.topLineIndex > 0 && this.hideLyricLineSprites(state.topLineIndex);
+		//state.botLineIndex > 0 && this.hideLyricLineSprites(state.botLineIndex);
+		// ？把 检查参数合法的工作 交给 hideLyricLineSprites,showLyricLineSprites方法 完成 ...
+		//this.hideLyricLineSprites(state.topLineIndex);
+		//this.hideLyricLineSprites(state.botLineIndex);
+
+		if (state.playing) {
+			//state.topLineIndex = 1;
+			//state.botLineIndex = 2;
+			//this.showLyricLineSprites(state.topLineIndex, true);
+			//this.showLyricLineSprites(state.botLineIndex, false);
+			this.updateLyricLineSpritesShow(1, true);
+			this.updateLyricLineSpritesShow(2, false);
+		}
+	}
+	else if (state.lineIndex == state.topLineIndex) {
+		//state.isTopLine = true;
+		if (state.lineIndex + 1 != state.botLineIndex) {
+			//state.botLineIndex > 0 && this.hideLyricLineSprites(state.botLineIndex);
+
+			//this.hideLyricLineSprites(state.botLineIndex);
+			//this.showLyricLineSprites(state.lineIndex + 1, !state.isTopLine);
+			//state.botLineIndex = state.lineIndex + 1;
+
+			this.updateLyricLineSpritesShow(state.lineIndex + 1, false);
+		}
+	}
+	else if (state.lineIndex == state.botLineIndex) {
+		//state.isTopLine = false;
+		if (state.lineIndex + 1 != state.topLineIndex) {
+			//state.topLineIndex > 0 && this.hideLyricLineSprites(state.topLineIndex);
+
+			//this.hideLyricLineSprites(state.topLineIndex);
+			//this.updateLyricLineSpritesShow(state.lineIndex + 1, !state.isTopLine);
+			//state.topLineIndex = state.lineIndex + 1;
+
+			this.updateLyricLineSpritesShow(state.lineIndex + 1, true);
+		}
+	}
+	else {
+		//state.botLineIndex = state.lineIndex;
+		//state.isTopLine = true;
+		//state.isTopLine = state.lineIndex % 2 == 1;
+
+		//state.topLineIndex > 0 && this.hideLyricLineSprites(state.topLineIndex);
+		//state.botLineIndex > 0 && this.hideLyricLineSprites(state.botLineIndex);
+		
+		//this.hideLyricLineSprites(state.topLineIndex);
+		//this.hideLyricLineSprites(state.botLineIndex);
+		//this.showLyricLineSprites(state.lineIndex, state.isTopLine);
+		//this.showLyricLineSprites(state.lineIndex + 1, !state.isTopLine);
+
+		state.isTopLine = state.lineIndex % 2 == 1;
+		this.updateLyricLineSpritesShow(state.lineIndex, state.isTopLine);
+		this.updateLyricLineSpritesShow(state.lineIndex + 1, !state.topLine);
+	}
+};
+*/
+
+MK_TextMakerAnim_Karaoke.prototype.updateLyricLinesSprites = function() {
+	var state = this._playingState;
+	if (state.lineIndex <= 0) {
+		// ？未初始化 ...
+
+		//if (state.playing) {
+		//	// 初始化
+		//	this.updateLyricLineSpritesShow(1, true);
+		//	this.updateLyricLineSpritesShow(2, false);
+		//}
+	}
+	else if (state.lineIndex == state.topLineIndex) {
+		// 当前行显示在上行
+		//if (state.lineIndex + 1 != state.botLineIndex) {
+		// ？倒数第二行不隐藏 ...
+		//if (state.lineIndex + 1 < this._lyricData.length && state.lineIndex + 1 != state.botLineIndex) {
+		// ？在 updateLyricLineSpritesShow 里有判断 state.lineIndex + 1 != state.botLineIndex ...
+		if (state.lineIndex + 1 <= this._lyricData.length) {
+			this.updateLyricLineSpritesShow(state.lineIndex + 1, false);
+		}
+	}
+	else if (state.lineIndex == state.botLineIndex) {
+		// 当前行显示在下行
+		//if (state.lineIndex + 1 != state.topLineIndex) {
+		//if (state.lineIndex + 1 < this._lyricData.length && state.lineIndex + 1 != state.topLineIndex) {
+		if (state.lineIndex + 1 <= this._lyricData.length) {
+			this.updateLyricLineSpritesShow(state.lineIndex + 1, true);
+		}
+	}
+	//else {
+	// ？已经播放过 则不再初始化
+	else if (!state.played) {
+		// 当前行未显示
+		//state.isTopLine = state.lineIndex % 2 == 1;
+		state.isTopLine = true;
+		this.updateLyricLineSpritesShow(state.lineIndex, state.isTopLine);
+		this.updateLyricLineSpritesShow(state.lineIndex + 1, !state.isTopLine);
+		state.played = true;
+	}
+	else {
+		// 播放结束
+		this.updateLyricLineSpritesHide(state.topLineIndex);
+		this.updateLyricLineSpritesHide(state.botLineIndex);
+	}
+};
+// TODO : ？当前行要等待播放 并且要显示等待点时 不显示下一行的歌词
+// TODO : 播放最后一行时 不让倒数第二行隐藏
+
+
+// TODO : ？空行后，让下一个歌词行显示在上行 ...
+// ？可以由调整歌词实现 所以没必要 ...
+
+MK_TextMakerAnim_Karaoke.prototype.updateLyricLineSpritesHide = function(lineIndex) {
+	var state = this._playingState;
+	if (state.topLineIndex == lineIndex) {
+		this.hideLyricLineSprites(...arguments);
+		state.topLineIndex = -1;
+	}
+	else if (state.botLineIndex == lineIndex) {
+		this.hideLyricLineSprites(...arguments);
+		state.botLineIndex = -1;
+	}
+};
+MK_TextMakerAnim_Karaoke.prototype.updateLyricLineSpritesShow = function(lineIndex, isTopLine) {
+	var state = this._playingState;
+	var key = isTopLine ? 'topLineIndex' : 'botLineIndex';
+	if (state[key] != lineIndex) {
+		this.updateLyricLineSpritesHide(state[key]);
+		this.showLyricLineSprites(...arguments);
+		state[key] = lineIndex;
+	}
+};
+
+MK_TextMakerAnim_Karaoke.prototype.updateLyricTextsSprites = function() {
+	var state = this._playingState;
+	var lineIndex = state.lineIndex;
+	var seek = state.seek;
+	if (lineIndex > 0 && this._lyricData) {
+		var targets = this.getOrCreateLyricLineSprites(lineIndex, true);
+		var lyricLineData = this._lyricData[lineIndex-1];
+		if (targets && lyricLineData) {
+			targets.forEach(function(obj) {
+				if (obj && obj.sprite) {
+					var text = lyricLineData.content[obj.var.textIndex-1];
+					var realDuration = seek - lyricLineData.start - text.start;
+					var widthRate = (realDuration / text.duration).clamp(0., 1.);
+					var w = Math.floor(obj.data.spriteData.width * widthRate);
+					obj.sprite.setFrame(0, 0, w, obj.data.spriteData.height);
+				}
+			}, this);
+		}
+	}
+
+	// TODO : 使用 textIndex 节省计算
+};
+
+MK_TextMakerAnim_Karaoke.prototype.updateWaitPointSprites = function() {
+	var state = this._playingState;
+	var waitPointNum = state.waitPointNum;
+	var targets = this.getOrCreateLyricLineSprites(0);
+	if (waitPointNum > 0) {
+		targets.forEach((obj, i) => 
+			obj && obj.sprite && (obj.sprite.visible = i <= waitPointNum));
+		state.waitPointShowedNum = waitPointNum;
+	}
+	else {
+		if (state.waitPointShowedNum > 0) {
+			targets.forEach(obj => 
+				obj && obj.sprite && (obj.sprite.visible = false));
+		}
+		state.waitPointShowedNum = 0;
+	}
+};
+
+
+// --------------------------------
+// 播放进度
+
+const MK_TextMakerAnim_Karaoke_DEBUG_AUDIO_SEEK = false;
+
+if (!MK_TextMakerAnim_Karaoke_DEBUG_AUDIO_SEEK) {
+	//MK_TextMakerAnim_Karaoke.prototype.audioSeek = function() {
+	MK_TextMakerAnim_Karaoke.prototype.playingSeek = function() {
+		//return AudioManager._bgsBuffer
+		//return this._playingState.playing && AudioManager._bgsBuffer
+		//return this._bgsObject && AudioManager.isCurrentBgs(this._bgsObject)
+		//	 ? this._bgsBuffer.seek() * 1000
+		//	 : 0;
+		//return this._bgsBuffer ? this._bgsBuffer.seek() * 1000 : 0;
+
+		// ？没有播放但是有 seek ...
+		//var audio = this._bgsBuffer;
+		//return audio && audio.isPlaying() ? audio.seek() * 1000 : 0;
+		return this.karaokeAudioSeek() * 1000;
+	};
+}
+else {
+	//MK_TextMakerAnim_Karaoke.prototype.audioSeek = function() {
+	MK_TextMakerAnim_Karaoke.prototype.playingSeek = function() {
+		return this._debug_audioSeek || 0;
+	};
+}
+
+/*
+//MK_TextMakerAnim_Karaoke.prototype.lyricLineSeek = function() {
+//	var seek = this.audioSeek();
+//MK_TextMakerAnim_Karaoke.prototype.lyricLineSeek = function(seek) {
+//	var seek = arguments.length >= 1 ? seek : this.audioSeek();
+//
+//	var foundIndex = this._lyricData
+//		.findIndex(line => !!line && line.start <= seek && seek < line.start + line.duration);
+//	// TODO : 二分搜索
+//
+//	return foundIndex >= 0 ? foundIndex + 1 : 0;
+//};
+
+// ？先判断当前歌词行 和 当前往后的歌词行 ...
+
+// ？二分搜索 在整体所有情况下 可以有最大效率 ...
+// ？但是通常情况下，最有可能查询到的是 当前位置和当前的下一个位置 ...
+// ？所以 从当前位置开始往后顺序查询 未找到时再从开头开始 这样的查询效率更高 ...
+
+// 歌词行播放进度 不包含等待点
+MK_TextMakerAnim_Karaoke.prototype.lyricLineSeek = function(seek) {
+	var seek = arguments.length >= 1 ? seek : this.audioSeek();
+
+	var currentLineIndex = this._playingState ? this._playingState.lineIndex : 1;
+
+	var foundIndex = -1;
+	if (this._lyricData) {
+		if (currentLineIndex > 0) {
+			for (var i = currentLineIndex-1, l = this._lyricData.length; i < l; i++) {
+				var line = this._lyricData[i];
+				if (!!line && line.start <= seek && seek < line.start + line.duration) {
+					foundIndex = i;
+					break;
+				}
+			}
+			if (foundIndex < 0) {
+				for (var i = 0, l = currentLineIndex-1; i < l; i++) {
+					var line = this._lyricData[i];
+					if (!!line && line.start <= seek && seek < line.start + line.duration) {
+						foundIndex = i;
+						break;
+					}
+				}
+			}
+		}
+		else {
+			foundIndex = this._lyricData
+				.findIndex(line => !!line && line.start <= seek && seek < line.start + line.duration); 
+		}
+	}
+	
+	return foundIndex + 1;
+};
+
+MK_TextMakerAnim_Karaoke.prototype.lyricLineTextSeek = function(seek) {
+	var seek = arguments.length >= 1 ? seek : this.audioSeek();
+	var lineIndex = this.lyricLineSeek(seek);
+
+	var foundIndex = -1;
+	//if (lineIndex > 0) {
+	//if (this._lyricData && lineIndex > 0) {
+	if (this._lyricData && lineIndex > 0 && this._lyricData[lineIndex-1]) {
+		var line = this._lyricData[lineIndex-1];
+		var currentLineIndex = this._playingState ? this._playingState.lineIndex : 1;
+		var currentTextIndex = this._playingState ? this._playingState.textIndex : 1;
+
+		//if (currentLineIndex == lineIndex) {
+		if (currentTextIndex > 0 && currentLineIndex == lineIndex) {
+			//for (var i = currentTextIndex-1, l = this._lyricData.length; i < l; i++) {
+			//	var text = this._lyricData[lineIndex-1].content;
+			//for (var i = currentTextIndex-1, arr = this._lyricData[lineIndex].content, l = arr.length; 
+			//		i < l; i++) {
+			for (var i = currentTextIndex-1, arr = line.content, l = arr.length; i < l; i++) {
+				var text = arr[i];
+				//if (!!text && text.start <= seek && seek < text.start + text.duration) {
+				// 每个歌词的字的 start 是相对该行最开始的时间，第一个字的 start 永远是 0 ...
+				if (!!text && line.start + text.start <= seek
+						   && seek < line.start + text.start + text.duration) {
+					foundIndex = i;
+					break;
+				}
+			}
+			if (foundIndex < 0) {
+				//for (var i = 0, l = currentTextIndex-1; i < l; i++) {
+				//	var text = this._lyricData[lineIndex-1].content;
+				//for (var i = 0, arr = this._lyricData[lineIndex].content, l = currentTextIndex-1; 
+				//		i < l; i++) {
+				for (var i = 0, arr = line.content, l = currentTextIndex-1; i < l; i++) {
+					var text = arr[i];
+					//if (!!text && text.start <= seek && seek < text.start + text.duration) {
+					if (!!text && line.start + text.start <= seek
+							   && seek < line.start + text.start + text.duration) {
+						foundIndex = i;
+						break;
+					}
+				}
+			}
+		}
+		else {
+			//foundIndex = this._lyricData[lineIndex-1].content
+			foundIndex = line.content
+				//.findIndex(text => !!text && text.start <= seek && seek < text.start + text.duration); 
+				.findIndex(text => !!text && line.start + text.start <= seek
+										  && seek < line.start + text.start + text.duration); 
+		}
+	}
+
+	return {
+		lineIndex : lineIndex, 
+		textIndex : foundIndex + 1, 
+	};
+};
+*/
+
+// ？krc歌词的数据里 歌词的时间范围不一定是连续的 ...
+// ？在 行与行 或 字与字 之间的中断部分 是歌词的等待 ...
+
+// ？第一行歌词的开始时间设置得超过0 可以作为歌曲开始时的等待 ...
+
+
+// ？因为歌词不是完全连续的 所以只用 一个 lineIndex 属性 无法完全表达当前状态 ...
+
+// ？lineIndex 和 lineIndex+1 分别为 当前行 和 下一行 ...
+// ？如果是连续的 那么 当前行结束后 下一行立刻开始 ...
+// ？此时可以立刻更新显示的歌词 无需记录是否结束或开始 ...
+// ？如果是中断的 那么 当前行结束时 下一行还未开始 ...
+// ？此时需要记录 lineFinished 表示 当前行还未结束 ...
+// ？对于一行中的文字 记录 textFinished 也是如此 ...
+
+/*
+MK_TextMakerAnim_Karaoke.prototype.lyricLineSeek = function(seek) {
+	var seek = arguments.length >= 1 ? seek : this.audioSeek();
+
+	var currentLineIndex = this._playingState ? this._playingState.lineIndex : 1;
+
+	var foundIndex = -1;
+	var lineFinished = false;
+	if (this._lyricData) {
+		/*
+		if (currentLineIndex > 0) {
+			//for (var i = currentLineIndex-1, arr = this._lyricData, l = arr.length, 
+			//		line = arr[i], botLine = arr[i+1]; i < l; i++, (line = arr[i]), (botLine = arr[i+1])) {
+			var line = null, nextLine = null;
+			for (var i = currentLineIndex-1, arr = this._lyricData, l = arr.length; i < l; i++) {
+				line = arr[i];
+				nextLine = arr[i+1];
+
+				if (seek < line.start) {
+				}
+				//else if (line.start <= seek && seek < line.start + line.duration) {
+				else if (seek < line.start + line.duration) {
+					foundIndex = i;
+					lineFinished = false;
+					break;
+				}
+				else if (nextLine && seek < nextLine.start) {
+					foundIndex = i;
+					lineFinished = true;
+					break;
+				}
+			}
+			
+		}
+		else {
+			foundIndex = this._lyricData
+				.findIndex(line => !!line && line.start <= seek && seek < line.start + line.duration); 
+		}
+		* /
+
+		var line = null, nextLine = null;
+		for (var findBeforeList = 0; findBeforeList <= 1; findBeforeList++) {
+			var arr = this._lyricData;
+			var startIndex = currentLineIndex <= 0
+				// ? 0
+				 ? findBeforeList ? 0 : 0
+				 : findBeforeList ? 0 : currentLineIndex-1;
+			var endIndex   = currentLineIndex <= 0
+				// ? arr.length
+				 ? findBeforeList ? arr.length : 0
+				 : findBeforeList ? currentLineIndex-1 : arr.length;
+
+			for (var i = startIndex; i < endIndex; i++) {
+				line = arr[i];
+				nextLine = arr[i+1];
+
+				if (seek < line.start) {
+				}
+				//else if (line.start <= seek && seek < line.start + line.duration) {
+				else if (seek < line.start + line.duration) {
+					foundIndex = i;
+					lineFinished = false;
+					break;
+				}
+				else if (nextLine && seek < nextLine.start) {
+					foundIndex = i;
+					lineFinished = true;
+					break;
+				}
+			}
+
+			if (foundIndex >= 0) {
+				break;
+			}
+		}
+	}
+	
+	return {
+		lineIndex : foundIndex + 1, 
+		lineFinished : lineFinished, 
+	}
+};
+
+MK_TextMakerAnim_Karaoke.prototype.lyricLineTextSeek = function(seek) {
+	var seek = arguments.length >= 1 ? seek : this.audioSeek();
+	var lineSeek = this.lyricLineSeek(seek);
+	var lineIndex = lineSeek.lineIndex;
+	var lineFinished = lineSeek.lineFinished;
+
+	var currentLineIndex = this._playingState ? this._playingState.lineIndex : 1;
+	var currentTextIndex = this._playingState ? this._playingState.TextIndex : 1;
+
+	var foundIndex = -1;
+	var textFinished = false;
+	if (this._lyricData && lineIndex > 0 && this._lyricData[lineIndex-1]) {
+		var text = null, nextText = null;
+		for (var findBeforeText = 0; findBeforeText <= 1; findBeforeText++) {
+			var arr = this._lyricData[lineIndex-1].content;
+			var startIndex = currentLineIndex != lineIndex || currentTextIndex <= 0
+				 ? findBeforeText ? 0 : 0
+				 : findBeforeText ? 0 : currentTextIndex-1;
+			var endIndex   = currentLineIndex != lineIndex || currentTextIndex <= 0
+				 ? findBeforeText ? arr.length : 0
+				 : findBeforeText ? currentTextIndex-1 : arr.length;
+
+			for (var i = startIndex; i < endIndex; i++) {
+				text = arr[i];
+				nextText = arr[i+1];
+
+				if (seek < text.start) {
+				}
+				else if (seek < text.start + text.duration) {
+					foundIndex = i;
+					textFinished = false;
+					break;
+				}
+				else if (nextText && seek < nextText.start) {
+					foundIndex = i;
+					textFinished = true;
+					break;
+				}
+			}
+
+			if (foundIndex >= 0) {
+				break;
+			}
+		}
+	}
+
+	return {
+		lineIndex : lineIndex, 
+		lineFinished : lineFinished, 
+		textIndex : foundIndex + 1, 
+		textFinished : textFinished, 
+	};
+};
+*/
+
+
+// ？在等待歌词时 一开始继续显示当前行歌词 ...
+// ？在下一行歌词播放前一段时间内 不再显示当前行歌词 并且显示等待点和下一行歌词和再下一行歌词 ...
+// ？这样就要区分 在等待歌词时 是否已经更变了歌词显示 ...
+// ？因为 更变歌词显示后 原下一行歌词变成了当前行歌词 ...
+// ？所以 不再是 lineFinished = true 状态 而是 lineStarted = false 状态 ...
+// ？...
+
+
+//MK_TextMakerAnim_Karaoke.prototype.lineWaitTimeXXX = function() {
+//};
+
+// ？最后一个字的持续时间不变 增加该行的持续时间 可以让该行歌词播放完后仍然显示 ...
+// ？歌词行的持续时间不变 增加下一行的开始时间 可以让该行歌词完后直接消失 然后显示等待点 开始等待播放 ...
+// ？这样就可以通过设置krc歌词数据 实现调整歌词的显示和等待 ...
+// ？...
+
+
+//MK_TextMakerAnim_Karaoke.prototype.waitMinTime = function() {
+//	//var minWaitPoint = this.getParam('minWaitPoint');
+//	//return minWaitPoint * 1000;
+//	return this._minWaitTime;
+MK_TextMakerAnim_Karaoke.prototype.minWaitSec = function() {
+	return this._minWaitSec;
+};
+//MK_TextMakerAnim_Karaoke.prototype.waitMaxTime = function() {
+//	//var maxWaitPoint = this.getParam('maxWaitPoint');
+//	//return maxWaitPoint * 1000;
+//	return this._maxWaitTime;
+MK_TextMakerAnim_Karaoke.prototype.maxWaitSec = function() {
+	return this._maxWaitSec;
+};
+MK_TextMakerAnim_Karaoke.prototype.calWaitPointNum = function(seek, nextStart) {
+	//var deltaSec = Math.floor((nextStart - seek) / 1000);
+	//if (deltaSec >= this.minWaitSec()) {
+	//	if (deltaSec >= this.maxWaitSec()) {
+	//		return this.maxWaitSec();
+	//	}
+	//	return deltaSec;
+	//}
+	//return 0;
+
+	// ？等待点开始消失时 也会受最小数量影响 ...
+
+	//var deltaSec = Math.floor((nextStart - seek) / 1000);
+	var deltaSec = Math.ceil((nextStart - seek) / 1000);
+	if (this._playingState.waiting) {
+		// 正在等待
+		// ？最小数量不影响计算 ...
+		if (deltaSec >= this.maxWaitSec()) {
+			return this.maxWaitSec();
+		}
+		return deltaSec;
+	}
+	else {
+		// 不再等待
+		// ？最小数量限制出现 ...
+		if (deltaSec >= this.minWaitSec()) {
+			if (deltaSec >= this.maxWaitSec()) {
+				return this.maxWaitSec();
+			}
+			return deltaSec;
+		}
+		return 0;
+	}
+};
+
+MK_TextMakerAnim_Karaoke.prototype.lyricLineSeek = function(seek) {
+	var seek = arguments.length >= 1 ? seek : this.playingSeek();
+
+	var currentLineIndex = this._playingState ? this._playingState.lineIndex : 1;
+
+	var foundIndex = -1;
+	var lineStarted = false;
+	var lineFinished = false;
+	var waitPointNum = 0;
+	if (this._lyricData) {
+		var line = null, nextLine = null;
+		for (var findBeforeList = 0; findBeforeList <= 1; findBeforeList++) {
+			var arr = this._lyricData;
+			var startIndex = currentLineIndex <= 0
+				 ? findBeforeList ? 0 : 0
+				 : findBeforeList ? 0 : currentLineIndex-1;
+			var endIndex   = currentLineIndex <= 0
+				 ? findBeforeList ? arr.length : 0
+				 : findBeforeList ? currentLineIndex-1 : arr.length;
+
+			for (var i = startIndex; i < endIndex; i++) {
+				line = arr[i];
+				nextLine = arr[i+1];
+
+				if (seek < line.start) {
+					// continue
+				}
+				else if (seek < line.start + line.duration) {
+					foundIndex = i;
+					lineStarted = true;
+					lineFinished = false;
+					break;
+				}
+				else if (nextLine && seek < nextLine.start) {
+					// 该行结束 下一行还未开始
+
+					// 计算等待点数量
+					// ？没有下一行时 即最后一行时 不需要计算 ...
+					//foundIndex = i;
+					//lineStarted = true;
+					//lineFinished = true;
+					//waitPointNum = this.calWaitPointNum(seek, nextLine.start);
+					//break;
+
+					// ？根据等待时间 判断是否要改变显示行 ...
+					waitPointNum = this.calWaitPointNum(seek, nextLine.start);
+					if (nextLine.start - seek > this.maxWaitSec() * 1000) {
+						// 等待时间较长，不改变显示行
+						foundIndex = i;
+						lineStarted = true;
+						lineFinished = true;
+						break;
+					}
+					else {
+						// 等待时间较短，改变显示行
+						foundIndex = i + 1;
+						lineStarted = false;
+						lineFinished = false;
+						break;
+						// ？改变显示行后 下次查询播放行时 会最后一次遍历才找到 ...
+						// TODO : 优化
+					}
+				}
+				else if (!nextLine) {
+					// ？最后一行 且已结束 ...
+					foundIndex = i+1;
+					lineStarted = false; // ?
+					lineFinished = true; // ?
+					break;
+				}
+			}
+
+			if (foundIndex >= 0) {
+				break;
+			}
+		}
+
+		// 未找到，认为是在第一行，且未开始
+		if (foundIndex < 0) {
+			foundIndex = 0;
+			lineStarted = false;
+			lineFinished = false;
+
+			// 第一行未开始时 也要计算等待点数量
+			if (this._lyricData[0]) {
+				waitPointNum = this.calWaitPointNum(seek, this._lyricData[0].start);
+			}
+		}
+	}
+	
+	return {
+		lineIndex : foundIndex + 1, 
+		lineStarted : lineStarted, 
+		lineFinished : lineFinished, 
+		waitPointNum : waitPointNum, 
+	};
+};
+
+MK_TextMakerAnim_Karaoke.prototype.lyricLineTextSeek = function(seek) {
+	var seek = arguments.length >= 1 ? seek : this.playingSeek();
+	var lineSeek = this.lyricLineSeek(seek);
+	var lineIndex = lineSeek.lineIndex;
+	var lineFinished = lineSeek.lineFinished;
+	var waitPointNum = lineSeek.waitPointNum;
+
+	var currentLineIndex = this._playingState ? this._playingState.lineIndex : 1;
+	var currentTextIndex = this._playingState ? this._playingState.textIndex : 1;
+
+	var foundIndex = -1;
+	var textStarted = false;
+	var textFinished = false;
+	if (this._lyricData && lineIndex > 0 && this._lyricData[lineIndex-1]) {
+		var text = null, nextText = null;
+		for (var findBeforeText = 0; findBeforeText <= 1; findBeforeText++) {
+			var arr = this._lyricData[lineIndex-1].content;
+			var startIndex = currentLineIndex != lineIndex || currentTextIndex <= 0
+				 ? findBeforeText ? 0 : 0
+				 : findBeforeText ? 0 : currentTextIndex-1;
+			var endIndex   = currentLineIndex != lineIndex || currentTextIndex <= 0
+				 ? findBeforeText ? arr.length : 0
+				 : findBeforeText ? currentTextIndex-1 : arr.length;
+
+			for (var i = startIndex; i < endIndex; i++) {
+				text = arr[i];
+				nextText = arr[i+1];
+
+				if (seek < text.start) {
+					// continue
+				}
+				else if (seek < text.start + text.duration) {
+					foundIndex = i;
+					textStarted = true;
+					textFinished = false;
+					break;
+				}
+				else if (nextText && seek < nextText.start) {
+					foundIndex = i;
+					textStarted = true;
+					textFinished = true;
+					break;
+				}
+				else if (!nextText) {
+					// ？最后一个字 且已结束 ...
+					foundIndex = i+1;
+					textStarted = false; // ?
+					textFinished = true; // ?
+					break;
+				}
+			}
+
+			if (foundIndex >= 0) {
+				break;
+			}
+		}
+
+		// 未找到，认为是在第一个字，且未开始
+		if (foundIndex < 0) {
+			foundIndex = 0;
+			textStarted = false;
+			textFinished = false;
+		}
+	}
+
+	//return {
+	//	lineIndex : lineIndex, 
+	//	lineFinished : lineFinished, 
+	//	waitPointNum : waitPointNum, 
+	//	textIndex : foundIndex + 1, 
+	//	textFinished : textFinished, 
+	//};
+	return Object.assign({
+		textIndex : foundIndex + 1, 
+		textStarted : textStarted, 
+		textFinished : textFinished, 
+	}, lineSeek);
+};
+
+
+// --------------------------------
+// 结束播放
+
+// FINISH : messageWindow 关闭时 停止播放 等
+
+MK_TextMakerAnim_Karaoke.prototype.mesasgeWindowClosed = function() {
+	return !this._msgWindow || this._msgWindow.isClosed();
+};
+MK_TextMakerAnim_Karaoke.prototype.updateStopKaraokeAudio = function() {
+	if (this.karaokeAudioPlaying() && this.mesasgeWindowClosed()) {
+		this.stopKaraokeAudio();
+	}
+};
+
+MK_TextMakerAnim_Karaoke.prototype.destroyMe = function() {
+	MK_TextMakerAnimBase.prototype.destroyMe.apply(this, arguments);
+	this.stopKaraokeAudio();
+};
+
+
+
+// TODO : ？缓慢停止 ...
+
+// TODO : onPause, onStop
+
+// ？控制 播放和暂停 ...
+
+// ？nw窗口暂停时 暂停播放 ...
+
+// TODO : 让消息窗口等待
+
+
+
+
+// ----------------------------------------------------------------
 // MK_TextStyleAnimBase
 // 文本动画派生类-文本样式动画基类
 
-// 用文本动画完成文字样式的设置
 // 派生于 MK_TextAnimBase
+// 用文本动画完成文字样式的设置
 // 在添加字母精灵时 设置其样式 作为文字的样式
 
 // TODO : 未来要增加预绘制的功能
 
 function MK_TextStyleAnimBase() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextStyleAnimBase.prototype = Object.create(MK_TextAnimBase.prototype);
@@ -2027,7 +3531,7 @@ MK_TextXXXStyleAnim.prototype.onInitTarget = function(newObj) {
 
 //function MK_TextCenterStyleAnim() {
 function MK_TextStyleAnim_Center() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextStyleAnim_Center.prototype = Object.create(MK_TextStyleAnimBase.prototype);
@@ -2104,7 +3608,7 @@ MK_TextStyleAnim_Center.prototype.onInitTarget = function(newObj) {
 // MK_SpriteAnimationSet
 
 function MK_SpriteAnimationSet() {
-    throw new Error('MK_SpriteAnimationSet is a static class');
+	throw new Error('MK_SpriteAnimationSet is a static class');
 };
 
 MK_SpriteAnimationSet._animationClasses = [];
@@ -2285,7 +3789,7 @@ MK_Plugins.class['MK_SpriteAnimationSet'] = MK_SpriteAnimationSet;
 	//MK_TextAnimBase, // 0 empty, text anim base
 
 	// MOG_AnimterdText
-	MK_TextAnimBase, // 1 fade
+	MK_TextAnimBase, // 1 text anim base
 	MK_TextAnim_Fade, // 2 fade
 	MK_TextAnim_Zoom, // 3 zoom
 	MK_TextAnim_Zoom2, // 4 zoom2
@@ -2308,8 +3812,11 @@ MK_Plugins.class['MK_SpriteAnimationSet'] = MK_SpriteAnimationSet;
 		MK_SpriteAnimationSet.addSpriteAnimationClassAt(startIndex + i, each));
 })([
 	// text maker
-	MK_TextAnim_Karaoke, // 31 karaoke
+	MK_TextMakerAnimBase, // 31 text maker anim base
+	MK_TextMakerAnim_Karaoke, // 32 karaoke
 ], 31);
+
+// ？TODO : 注音动画，如日文汉字的假名注音 ...
 
 
 (function(list, startIndex) {
