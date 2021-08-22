@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_SpriteAnimManager.js 精灵动画管理器
-// version : v0.1.0 2020/11/11 完成基本框架和功能的demo
+// version : v0.3.3 2021/08/21 增加调用摧毁动画类方法
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,17 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.3.3.branch1 2021/08/22 更新插件说明
+ *   v0.3.3 2021/08/21 增加调用摧毁动画类方法
+ *   v0.3.2 2021/08/19 考虑绘制图标
+ *   v0.3.1 2021/08/18 调整框架、及时清理对象、更详细的textState
+ *     某些标签直接设置动画类对象的标签，不再写入TextSprite的标签
+ *     消息框换页和关闭时，清理动画类对象和字母精灵类对象
+ *     消息框的textState增加页数、行数、字数的状态
+ *   v0.3.0-alpha 2021/08/18 更新框架 : TextSprite解耦
+ *   v0.2.0.branch1 2021/08/17 清理冗余注释
+ *   v0.2.0 2021/08/17 更新框架
+ *     分离出 处理精灵动画播放效果的框架和所有的精灵动画类 作为新插件MKP_SpriteAnimationSet
  *   v0.1.1 2021/08/16 更新插件说明及规约
  *   v0.1.0 2020/11/11 完成基本框架和功能的demo
  *     把最初的MK_AnimatedMessage分成了MK_SpriteAnimManager和MK_TextSprite
@@ -39,17 +50,22 @@
  * 
  * ## 简要说明
  * 
- * 本插件(`MKP_SpriteAnimManager`)用来设置动画和动画参数
- * 播放动画由另一个插件`MKP_TextSprite`负责
+ * 完成精灵动画功能的三个插件之一  
+ * + 插件`MKP_TextSprite`
+ *   - 用于支持绘制和控制播放动画等
+ * + 插件`MKP_SpriteAnimationSet`
+ *   - 用于提供处理动画效果等
+ * + 插件`MKP_SpriteAnimManager`(本插件)
+ *   - 用于设置动画和动画参数、处理消息框文字播放动画等
  * 
  * 首先对动画进行配置，
- * 每个动画id可以指定一个基础动画，并且可以配置一组参数，操作详见 【插件指令】
- * 之后在编辑消息使用特殊字串触发一些播放动画的操作，详见 插件`MKP_TextSprite`
+ * 每个动画id可以指定一个基础动画，并且可以配置一组参数，操作详见 【插件指令】  
+ * 之后在编辑消息使用特殊字串触发一些播放动画的操作，详见 插件【MKP_TextSprite】  
  * 
  * #### 动画id
  * 动画分为基础动画和自定义参数动画  
- * + 基础动画拥有固定的默认参数，id分布在0~99  
- * + 自定义参数动画可以指定一个基础动画，并使用自己设置的参数，id分布在100及以后  
+ * + 基础动画拥有固定的默认参数，id分布在0~100  
+ * + 自定义参数动画可以指定一个基础动画，并使用自己设置的参数，id分布在101及以后  
  * 
  * #### 动画参数
  * 可以在插件参数中配置初始动画参数  
@@ -63,8 +79,15 @@
  * 
  * ## 使用方法
  * 
+ * 按顺序导入 完成精灵动画功能的三个插件  
+ * + MKP_TextSprite
+ * + MKP_SpriteAnimationSet
+ * + MKP_SpriteAnimManager
+ * 
  * 使用插件参数或插件指令对动画进行设置，
- * 再使用 插件`MKP_TextSprite` 播放动画  
+ * 再使用 插件【MKP_TextSprite】 播放动画  
+ * 
+ * 可参考 【使用示例】  
  * 
  * 
  * ## 插件指令
@@ -89,10 +112,10 @@
  *   - 固定写法，不区分大小写
  * + 用户动画id
  *   - 所设置的用户动画的id
- *   - 数值，用户动画id，大于100
+ *   - 数值，用户动画id，大于等于101
  * + 默认动画id
  *   - 作为模板的默认动画的id
- *   - 数值，默认动画id，小于99，大于等于0
+ *   - 数值，默认动画id，小于等于100，大于等于0
  *   - 当设置为0时，表示清除用户动画
  * 
  * #### 设置动画参数(按序号)
@@ -165,133 +188,33 @@
  * TODO
  * 
  * 
+ * ## 使用示例
+ * 
+ * #### 播放【缩放】效果
+ * + 事件
+ *   - ◆插件指令：AnimMgr setAnim 101 3
+ *   - ◆文本：无, 窗口, 底部
+ *   - ：　　：以下文字播放缩放效果：\TEXTANIM[101]\TAPlay[101]只有这句话会受效果影响
+ * 
+ * 
  * ## 其他说明
  * 
- * #### 动画列表概要(MOG_AnimatedText)
- * 以下动画效果来自 插件[`MOG_AnimatedText`](https://github.com/DrillUp/drill_plugins/blob/master/js/plugins/MOG_AnimatedText.js)  
+ * #### 动画列表，详细说明和参数见插件【MKP_SpriteAnimationSet】
  * 注 : id 为 默认动画id  
- * 
- * | id | 动画效果 | 动画名  | 动画描述 |
- * | :- | :------- | :-----  | :------- |
- * |  1 | 淡入淡出 | Fade     | (todo) |
- * |  2 | 缩放     | Zoom     | (todo) |
- * |  3 | 翻转     | Zoom2    | (todo) |
- * |  4 | 上下出现(未完成) | Wipe     | (todo) |
- * |  5 | 震动     | Shake    | (todo) |
- * |  6 | 剧烈缩放 | Zoom3    | (todo) |
- * |  7 | 波浪缩放 | Wave     | (todo) |
- * |  8 | 旋涡     | Rotation | (todo) |
- * |  9 | 摇晃     | Swing    | (todo) |
- * | 10 | 随机     | Random   | (todo) |
- * 
- * #### 动画列表概要(新增)
- * 以下动画效果为新增的动画  
- * 注 : id 为 默认动画id  
- * 
- * | id | 动画效果 | 动画名  | 动画描述 |
- * | :- | :------- | :-----  | :------- |
- * | 11 | 卡拉OK(未完成)   | Karaoke | 模仿卡拉OK播放的效果 |
- * 
- * #### 动画参数
- * 
- * + 1 - 缩放 - Zoom
- * | 序号 | 描述             | 参数名       | 值类型 | 默认值 | 备注 |
- * | :--- | :-----------     | :---------   | :----- | :----- | :--- |
- * |   0  | 初始不透明度     | opacityStart | 数值   | 0      |  |
- * |   1  | 结束不透明度     | opacityEnd   | 数值   | 255    |  |
- * |   2  | 不透明度变化速度 | opacitySpeed | 数值   | 5      |  |
- * 
- * + 2 - 淡入淡出 - Fade
- * | 序号 | 描述             | 参数名       | 值类型 | 默认值 | 备注 |
- * | :--- | :-----------     | :---------   | :----- | :----- | :--- |
- * |   0  | 初始不透明度     | opacityStart | 数值  | 0     |  |
- * |   1  | 结束不透明度     | opacityEnd   | 数值  | 255   |  |
- * |   2  | 不透明度变化速度 | opacitySpeed | 数值  | 4     |  |
- * |   3  | 初始X缩放        | scaleXStart  | 数值  | 2.0   |  |
- * |   4  | 结束X缩放        | scaleXEnd    | 数值  | 1.0   |  |
- * |   5  | X缩放变化速度    | scaleXSpeed  | 数值  | -0.04 |  |
- * |   6  | 初始Y缩放        | scaleYStart  | 数值  | 2.0   |  |
- * |   7  | 结束Y缩放        | scaleYEnd    | 数值  | 1.0   |  |
- * |   8  | Y缩放变化速度    | scaleYSpeed  | 数值  | -0.04 |  |
- * 
- * + 3 - 翻转 - Zoom2
- * | 序号 | 描述             | 参数名       | 值类型 | 默认值 | 备注 |
- * | :--- | :-----------     | :---------    | :----- | :----- | :--- |
- * |   0  | 初始不透明度     | opacityStart  | 数值  | 0     |  |
- * |   1  | 结束不透明度     | opacityEnd    | 数值  | 255   |  |
- * |   2  | 不透明度变化速度 | opacitySpeed | 数值  | 4     |  |
- * |   3  | 初始X缩放        | scaleXStart  | 数值  | -1.0  |  |
- * |   4  | 结束X缩放        | scaleXEnd    | 数值  | 1.0   |  |
- * |   5  | X缩放变化速度    | scaleXSpeed  | 数值  | 0.02  |  |
- * |   6  | 初始Y缩放        | scaleYStart  | 数值  | 2.0   |  |
- * |   7  | 结束Y缩放        | scaleYEnd    | 数值  | 1.0   |  |
- * |   8  | Y缩放变化速度    | scaleYSpeed  | 数值  | -0.02 |  |
- * 
- * + 4 - 上下出现 - Wipe
- * 
- * + 5 - 震动 - Shake
- * | 序号 | 描述                | 参数名          | 值类型 | 默认值 | 备注 |
- * | :--- | :-----------        | :---------      | :----- | :----- | :--- |
- * |   0  | 震动间隔(帧数)      | shakeWaitCount  | 数值  | 3     |  |
- * |   1  | 震动幅度(像素)      | shakeAmplitude  | 数值  | 3     |  |
- * |   2  | 是否停止(0不停;1停) | shakeNeedStop   | 0或1  | 0     |  |
- * |   3  | 震动总计数(若停止)  | shakeTotalCount | 数值  | 12   |  |
- * 
- * + 6 - 剧烈缩放 - Zoom3
- * | 序号 | 描述              | 参数名         | 值类型 | 默认值 | 备注 |
- * | :--- | :-----------      | :---------     | :----- | :----- | :--- |
- * |   0  | 初始不透明度      | opacityStart   | 数值  | 0      |  |
- * |   1  | 结束不透明度      | opacityEnd     | 数值  | 255    |  |
- * |   2  | 不透明度变化速度  | opacitySpeed   | 数值  | 20     |  |
- * |   3  | 初始X缩放         | scaleXStart    | 数值  | 4.0    |  |
- * |   4  | 结束X缩放         | scaleXEnd      | 数值  | 1.0    |  |
- * |   5  | X缩放变化速度     | scaleXSpeed    | 数值  | -0.2   |  |
- * |   6  | 初始Y缩放         | scaleYStart    | 数值  | 4.0    |  |
- * |   7  | 结束Y缩放         | scaleYEnd      | 数值  | 1.0    |  |
- * |   8  | Y缩放变化速度     | scaleYSpeed    | 数值  | -0.2   |  |
- * |   9  | 震动间隔(帧数)    | shakeWaitCount | 数值  | 3      |  |
- * |  10  | 震动幅度(像素)    | shakeAmplitude | 数值  | 3      |  |
- * |  11  | 是否停止          | shakeNeedStop   | 0或1  | 0     | 0不停;1停 |
- * |  12  | 震动总计数        | shakeTotalCount | 数值  | 12    | 若停止 |
- * 
- * + 7 - 剧烈缩放 - Zoom3
- * | 序号 | 描述       | 参数名     | 值类型 | 默认值 | 备注 |
- * | :--- | :-------   | :--------- | :----- | :----- | :--- |
- * |   0  | 缩放速度   | scaleSpeed | 数值   | 0.015  |  |
- * |   1  | 缩放帧数   | scaleCount | 数值   | 30     | 来或回一次的 |
- * |   2  | 总循环次数 | loopTotal  | 数值   | 1      |  |
- * 
- * + 8 - 旋涡 - Rotation
- * 
- * + 9 - 摇晃 - Swing
- * | 序号 | 描述         | 参数名       | 值类型 | 默认值 | 备注 |
- * | :--- | :---------   | :---------    | :----- | :----- | :--- |
- * |   0  | 旋转速度     | rotateSpeed    | 数值  | 0.02  | 角度/帧 |
- * |   1  | 初始旋转方向 | rotateInitDir  | 文本  | R     | L逆;R顺 |
- * |   2  | 初始角度     | angleInit      | 数值  | 0     | 正顺;负逆 |
- * |   3  | 角度左范围   | angleRangeL    | 数值  | -0.4  |  |
- * |   4  | 角度右范围   | angleRangeR    | 数值  | 0.4   |  |
- * 
- * + 10 - 随机 - Random
- * | 序号 | 描述             | 参数名        | 值类型 | 默认值 | 备注 |
- * | :--- | :-----------     | :---------    | :----- | :----- | :--- |
- * |   0  | 初始不透明度     | opacityStart  | 数值   | 0     |  |
- * |   1  | 结束不透明度     | opacityEnd    | 数值   | 255   |  |
- * |   2  | 不透明度变化速度 | opacitySpeed  | 数值   | 4     |  |
- * |   3  | 缩放最小范围     | scaleRangeMin | 数值   | 0.7   |  |
- * |   4  | 缩放最大范围     | scaleRangeMax | 数值   | 1.4   |  |
- * |   5  | 旋转范围         | rotateRange   | 数值   | 0.4   |  |
- * |   6  | 旋转方向         | rotateDir     | 文本   | R     | L逆;R顺 |
- * 
- * + 11 - 卡拉OK - Karaoke
- * | 序号 | 描述               | 参数名     | 值类型 | 默认值 | 备注 |
- * | :--- | :-----------       | :--------- | :----- | :----- | :--- |
- * |   0  | 初始不透明度       | playSpeed  | 数值  | 2       |  |
- * |   1  | 边框线宽           | lineWidth  | 数值  | 4       |  |
- * |   2  | 播放前文本边框颜色 | uLineColor | 文本  | #FFFFFF | 颜色 |
- * |   3  | 播放前文本颜色     | uTextColor | 文本  | #000000 | 颜色 |
- * |   4  | 播放后文本边框颜色 | dLineColor | 文本  | #000000 | 颜色 |
- * |   5  | 播放后文本颜色     | dTextColor | 文本  | #FFFFFF | 颜色 |
+ * | id | 动画效果 |
+ * | :- | :------- |
+ * |  2 | 淡入淡出 |
+ * |  3 | 缩放     |
+ * |  4 | 翻转     |
+ * |  5 | 上下出现(未完成) |
+ * |  6 | 震动     |
+ * |  7 | 剧烈缩放 |
+ * |  8 | 波浪缩放 |
+ * |  9 | 旋涡     |
+ * | 10 | 摇晃     |
+ * | 11 | 随机     |
+ * | 32 | 卡拉Ok   |
+ * | 52 | 文字居中 |
  * 
  * 
  * #### 对于简化设置决定的说明
@@ -312,8 +235,10 @@
  * 
  * ## 后续任务
  * 
- * - [ ] 更符合的Karaoke
  * - [ ] 更准确地功能划分 : SpriteAnimManager 用来管理和播放动画，TextSprite 只用于支持绘制和动画等功能
+ * - [x] 更新插件说明
+ * - [ ] 调整基础动画和用户动画的code，使得不会冲突
+ * - [ ] 优化管理文本动画对象，不反复创建和清除对象，而是清空动画目标并禁用文本动画对象(文本动画类提供该方法)
  * 
  * 
  * ## 联系方式
@@ -360,12 +285,15 @@
  * @text 动画id
  * @desc 
  * @type number
- * @default 100
+ * @min 101
+ * @default 101
  *
  * @param baseAnimCode
  * @text 基础动画id
  * @desc 
  * @type number
+ * @min 0
+ * @max 100
  * @default 0
  *
  * @param params
@@ -400,65 +328,92 @@
 
 
 
-// ？用 动画管理器 MK_TextAnimManager 代替 MK_TextSprite 中控制动画的功能 ...
-// ？MK_TextAnimManager 专门用来管理动画 包括实现动画和管理参数等 ...
-// ？而 MK_TextSprite 专门用来进行动画和储存临时数据等 ...
-
-
 // ？人物行走图动画也可以用这种动画框架 ...
 
 
-// FINISH : MK_TextAnimSprite 接受 MK_TextAnim_XX 并对其帧更新
+// TODO : MK_SpriteAnimManager 里也能按 key 储存参数
 
 
-// ？不止用于文本动画，也可以是其他的动画，故更名为 MK_SpriteAnimManager, MK_SpriteAnimBase ...
-
-
-// ？TODO : MK_SpriteAnimManager 里也能按 key 储存参数 ...
-
-
-// FINISH : 考虑在播放时添加目标的情况
-// FINISH : 添加精灵时 就要初始化精灵 on_add
-
-// FINISH : on_draw (initSprite)
-
-
-// ？TODO : 更符合Karaoke的节奏 ...
-// ？因为一个字内也可能节奏变化，所以不能用在字之间设置速度(宽/帧)的方法实现 ...
-
-
-// FINISH : 自定义动画无效
-// FINISH : 有些动画有问题
-// FINISH : 测试设置参数
-
-
-// ？经过抉择，TextAnim叫 文本动画，而不是 文字动画 ...
+// TODO : 更符合Karaoke的节奏
+// 因为一个字内也可能节奏变化，所以不能用在字之间设置速度(宽/帧)的方法实现
 
 
 
-var MK_Data = MK_Data || {};
-MK_Data.paramGet = MK_Data.paramGet || {};
-MK_Data.param = MK_Data.param || {};
-MK_Data.paramParse = MK_Data.paramParse || {};
-MK_Data.class = MK_Data.class || {};
 
-MK_Data.getPluginParam = MK_Data.getPluginParam ||
+var MK_Plugins = MK_Plugins || {};
+MK_Plugins.paramGet    = MK_Plugins.paramGet || {};
+MK_Plugins.param       = MK_Plugins.param || {};
+MK_Plugins.paramParser = MK_Plugins.paramParser || {};
+MK_Plugins.class       = MK_Plugins.class || {};
+MK_Plugins.datas       = MK_Plugins.datas || {};
+
+MK_Plugins.getPluginParam = MK_Plugins.getPluginParam ||
 function (pluginName) {
 	var param = PluginManager.parameters(pluginName);
 	if (!param || JSON.stringify(param) === '{}') {
 		var list = $plugins.filter(function (i) {
 			return i.description.contains('<' + pluginName + '>');
 		});
-		if (list.length > 0) {
-			var realPluginName = list[0].name;
-			if (realPluginName && realPluginName !== pluginName)
+		for (var i = 0; i < list.length; i++) {
+			var realPluginName = list[i].name;
+			if (realPluginName !== pluginName)
 				return PluginManager.parameters(realPluginName);
-			else return {};
 		}
-		else return {};
+		return {};
 	}
 	return param;
 };
+
+
+
+
+(function() {
+
+	var pluginName = 'MKP_SpriteAnimManager';
+	MK_Plugins.paramGet[pluginName] = MK_Plugins.getPluginParam(pluginName);
+	MK_Plugins.param[pluginName] = {};
+	MK_Plugins.paramParser[pluginName] = {};
+
+	var paramGet    = MK_Plugins.paramGet[pluginName];
+	var param       = MK_Plugins.param[pluginName];
+	var paramParser = MK_Plugins.paramParser[pluginName];
+
+	function parseAnimParam(str) {
+		str = str || '{"index":0,"key":"","value":""}';
+		var data = JSON.parse(str);
+		data.index = Number(data.index ||  0);
+		data.key   = String(data.key   || '');
+		data.value = String(data.value || '');
+		return data;
+	}
+	paramParser['parseAnimParam'] = parseAnimParam;
+
+	function parseAnimParams(str) {
+		str = str || '{"animCode":101,"baseAnimCode":0,"params":[]}';
+		var data = JSON.parse(str);
+		data.animCode     = Number(data.animCode     || 100);
+		data.baseAnimCode = Number(data.baseAnimCode ||   0);
+		data.params       = JSON.parse(data.params || '[]');
+		for (var i = 0; i < data.params.length; i++) {
+			data.params[i] = parseAnimParam(data.params[i]);
+		}
+		return data;
+	}
+	paramParser['parseAnimParams'] = parseAnimParams;
+
+	function getAnimParamsConfig(str) {
+		str = str || '[]';
+		var data = JSON.parse(str);
+		for (var i = 0; i < data.length; i++) {
+			data[i] = parseAnimParams(data[i]);
+		}
+		return data;
+	}
+	paramParser['getAnimParamsConfig'] = getAnimParamsConfig;
+
+	param['animParamsConfig'] = getAnimParamsConfig(paramGet['AnimParamsConfig'] || '[]');
+
+})();
 
 
 
@@ -468,7 +423,7 @@ function (pluginName) {
 // 文本动画管理器
 
 function MK_SpriteAnimManager() {
-    throw new Error('This is a static class');
+	throw new Error('This is a static class');
 };
 
 
@@ -477,8 +432,8 @@ function MK_SpriteAnimManager() {
 
 // 映射表MapTable 映射值Mapping
 // 映射表分为基础映射表和用户映射表
-// 基础映射表序号分布为 0 到 99(MAX_ANIM_SIZE)
-// 用户映射表序号分布为 100(MAX_ANIM_SIZE+1)以后
+// 基础映射表序号分布为 0 到 100(MAX_ANIM_SIZE)
+// 用户映射表序号分布为 101(MAX_ANIM_SIZE+1)以后
 // 基础映射表为所有基础动画(系统动画)的code->key映射
 // 用户映射表为用户设定的uCode->bCode(基础动画code)
 
@@ -507,6 +462,7 @@ MK_SpriteAnimManager._baseAnimMapTable = [
 MK_SpriteAnimManager.getBaseMapTable = function() {
 	return this._baseAnimMapTable;
 };
+// 暂时不用
 
 // 用户映射表
 MK_SpriteAnimManager._userAnimMapping = [];
@@ -515,9 +471,9 @@ MK_SpriteAnimManager.getUserMapTable = function() {
 };
 
 // TODO : 保存映射表
-// ？暂时不保存 ...
+// 暂时不保存
 
-MK_SpriteAnimManager.MAX_ANIM_SIZE = 99;
+MK_SpriteAnimManager.MAX_ANIM_SIZE = 100;
 MK_SpriteAnimManager.maxAnimSize = function() {
 	return this.MAX_ANIM_SIZE;
 };
@@ -527,10 +483,6 @@ MK_SpriteAnimManager.isBaseMappingCode = function(code) {
 MK_SpriteAnimManager.isUserMappingCode = function(code) {
 	return code > this.maxAnimSize();
 };
-
-//MK_SpriteAnimManager.getBaseMapping = function(bCode) {
-//};
-// ？不需要 ...
 
 MK_SpriteAnimManager.setUserMapping = function(uCode, bCode) {
 	if (this.isUserMappingCode(uCode) && this.isBaseMappingCode(bCode)) {
@@ -548,6 +500,11 @@ MK_SpriteAnimManager.getUserMapping = function(uCode) {
 };
 
 // TODO : ？用RM的变量指定 ...
+
+// TODO : ？分开 基础动画 和 用户动画 的 code 范围 ...
+// ？让用户动画可以使用任意code ...
+// ？防止 当基础动画数量增长后 与之前设置的用户动画code 冲突 ...
+// ？即 改 基础 : 0~100, 用户 : 101+ 为 基础 : 任意, 用户 : 任意 ...
 
 
 
@@ -639,42 +596,199 @@ MK_SpriteAnimManager.getAnimParamByKey = function(code, key) {
 };
 
 
-
 // --------------------------------
-// 动画派生类列表
+// 创建文本动画对象
 
 // ？暂时通过储存每个动画派生类的code及其对应的类 ...
 // ？这样可以管理器通过code找到对应的类 ...
 // ？于是可以使用对应类的key->index映射 ...
 
-MK_SpriteAnimManager._animClassList = [
-];
 MK_SpriteAnimManager.getAnimClass = function(code) {
-	return this._animClassList[code];
-};
-MK_SpriteAnimManager.setAnimClass = function(code, animClass) {
-	this._animClassList[code] = animClass;
+	return MK_SpriteAnimationSet.getSpriteAnimClassByCode(code);
 };
 
 MK_SpriteAnimManager.createSpriteAnimByRealCode = function(code) {
 	var animClass = this.getAnimClass(code);
 	if (!!animClass) {
 		var args = [...arguments].splice(1);
-		//return new animClass(args);
-		// ？若不用apply，则需要把数组展开 ...
 		return new animClass(...args);
 	}
 	else {
 		return null;
 	}
 };
-
 MK_SpriteAnimManager.createSpriteAnim = function(code) {
-	//return this.createSpriteAnimByRealCode(code);
-	// ？实例化动画类时，要指定code ...
 	var bCode = this.isUserMappingCode(code) ? this.getUserMapping(code) : code;
 	return this.createSpriteAnimByRealCode(bCode, code);
 };
+
+
+// --------------------------------
+// 储存文本动画对象
+
+MK_SpriteAnimManager._spriteAnimObjects = [];
+
+MK_SpriteAnimManager.addSpriteAnimObject = function(code) {
+	var spriteAnim = this.createSpriteAnim(code);
+	this._spriteAnimObjects[code] = spriteAnim;
+	// TODO : 考虑 占用同一 code 的问题
+	return spriteAnim;
+};
+
+MK_SpriteAnimManager.getSpriteAnimObject = function(code) {
+	return this._spriteAnimObjects[code];
+};
+
+
+// --------------------------------
+// 清除文本动画对象
+
+MK_SpriteAnimManager.clearSpriteAnimObject = function(code) {
+	//this._spriteAnimObjects[code] = null;
+	if (this._spriteAnimObjects[code]) {
+		this._spriteAnimObjects[code].destroyMe(); // ？...
+		this._spriteAnimObjects[code] = null;
+	}
+};
+MK_SpriteAnimManager.clearAllSpriteAnimObject = function() {
+	this._spriteAnimObjects.splice(0);
+};
+
+MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite = function(textSprite) {
+	!!textSprite && this._spriteAnimObjects.forEach(function(spriteAnim, code) {
+		if (textSprite.getTextSpriteAnimFlag('anim', code)) {
+			this.clearSpriteAnimObject(code);
+		}
+	}, this);
+};
+
+
+// --------------------------------
+// 精灵动画目标
+
+// 添加新动画对象时，为其初始化字母精灵目标
+//MK_SpriteAnimManager.initSpriteAnimTarget = function(spriteAnim, code, textSprite) {
+// ？可以通过 spriteAnim.getAnimCode 获取 code ...
+MK_SpriteAnimManager.initSpriteAnimTarget = function(spriteAnim, textSprite) {
+	if (spriteAnim) {
+		var code = spriteAnim.getAnimCode();
+		//textSprite.filterLetterObjects(textSprite.animFlagFormat('add', code))
+		textSprite.filterLetterObjectsByAnimFlag(code, 'add')
+			.forEach(letterObj => spriteAnim.addTarget(letterObj.sprite, letterObj.data));
+		// TODO : 使用 spriteAnim.setTargets 方法
+
+		if (typeof spriteAnim.setMsgWindow === 'function') {
+			spriteAnim.setMsgWindow(textSprite._msgWindow);
+		}
+		// TODO : 解耦 是否需要进行 setMsgWindow 应该由 spriteAnim 处理 ...
+	}
+};
+
+// 添加新字母精灵时，为每个动画对象检查并添加字母精灵目标
+MK_SpriteAnimManager.addNewSpriteAnimTarget = function(textSprite, letterObj) {
+	this._spriteAnimObjects.forEach(
+		function(spriteAnim, code) {
+			if (spriteAnim) {
+				//var key = textSprite.animFlagFormat('add', code);
+				//if (letterObj.flag[key]) {
+				if (textSprite.getLetterAnimFlag(letterObj, 'add', code)) {
+					spriteAnim.addTarget(letterObj.sprite, letterObj.data);
+				}
+			}
+		}, this);
+};
+
+(function() {
+
+const _MK_MK_TextSprite_onAddLetterSprite = MK_TextSprite.prototype.onAddLetterSprite;
+MK_TextSprite.prototype.onAddLetterSprite = function(letterObj) {
+	_MK_MK_TextSprite_onAddLetterSprite.apply(this, arguments);
+	MK_SpriteAnimManager.addNewSpriteAnimTarget(this, letterObj);
+};
+
+})();
+
+
+// --------------------------------
+// 设置精灵动画标签
+
+//MK_SpriteAnimManager.setSpriteAnimFlag = function(code, flag, value) {
+MK_SpriteAnimManager.setSpriteAnimFlag = function(flag, code, value) {
+	var spriteAnim = this._spriteAnimObjects[code];
+	if (spriteAnim) {
+		flag = flag.slice(0, 1).toUpperCase() + flag.slice(1);
+		var flagOn = value === undefined ? true : !!value;
+		flagOn
+			 ? spriteAnim.setAnimFlagOn(flag)
+			 : spriteAnim.setAnimFlagOff(flag);
+	}
+};
+
+
+// --------------------------------
+// update
+
+//MK_SpriteAnimManager.updateSpriteAnimtions = function() {
+//	this._spriteAnimObjects.forEach(
+//		spriteAnim => spriteAnim && spriteAnim.update());
+//};
+
+MK_SpriteAnimManager.updateSpriteAnimtions = function(textSprite) {
+	//this.updateSpriteAnimtionsSetStatus(textSprite);
+	this.updateSpriteAnimtionsFrameUpdate(textSprite);
+};
+
+MK_SpriteAnimManager.updateSpriteAnimtionsFrameUpdate = function(textSprite) {
+	this._spriteAnimObjects.forEach(function(spriteAnim, code) {
+		if (spriteAnim && textSprite.getTextSpriteAnimFlag('anim', code)) {
+			spriteAnim.update();
+		}
+	});
+};
+
+/*
+MK_SpriteAnimManager.updateSpriteAnimtionsSetStatus = function(textSprite) {
+	this._spriteAnimObjects.forEach(function(spriteAnim, code) {
+		//if (spriteAnim) {
+		if (spriteAnim && textSprite.getTextSpriteAnimFlag('anim', code)) {
+			[
+				'Play', 
+				'Pause', 
+				'Continue', 
+				'Stop', 
+				'Init', 
+			].forEach(flag => {
+				if (textSprite.getTextSpriteAnimFlag(flag.toLowerCase(), code)) {
+					spriteAnim.setAnimFlagOn(flag);
+					textSprite.setTextSpriteAnimFlag(flag.toLowerCase(), code, false)
+				}
+			})
+		}
+	}, this);
+};
+*/
+
+// ？和 精灵动画 SpriteAnim 耦合 ...
+// ？想办法 解耦 ...
+
+// ？控制字符调用时 不需要先设置 TextSprite对象 的标签 再更新到 SpriteAnim对象 的标签 ...
+// ？而是直接设置 SpriteAnim对象 的标签 ...
+
+
+
+// TODO : 想个办法 让 textsprite 使用的 动画不重复 ...
+// ？动画不储存在 MK_SpriteAnimManager 里 ...
+
+// ？因为 消息结束时 会清除动画 ...
+// ？所以 如果只在 消息框里使用文本动画 且只有一个消息框的话 就不会有重复使用动画的问题 ...
+
+// TODO : 再整理框架
+
+// TODO : 清除动画
+
+
+MK_Plugins.class['MK_SpriteAnimManager'] = MK_SpriteAnimManager;
+
 
 
 
@@ -683,12 +797,10 @@ MK_SpriteAnimManager.createSpriteAnim = function(code) {
 
 (function () {
 
-var _MK_Game_Interpreter_pluginCommand   = Game_Interpreter.prototype.pluginCommand;
+const _MK_Game_Interpreter_pluginCommand = Game_Interpreter.prototype.pluginCommand;
 Game_Interpreter.prototype.pluginCommand = function (command, args) {
 	_MK_Game_Interpreter_pluginCommand.apply(this, arguments);
 
-	// textAnim
-	//if ((command || '').toLowerCase() === 'textanim') {
 	// AnimMgr
 	if ((command || '').toLowerCase() === 'animmgr') {
 		var comm = (args[0] || '').toLowerCase();
@@ -712,9 +824,6 @@ Game_Interpreter.prototype.pluginCommand = function (command, args) {
 		}
 		else if (comm === 'setparams') { // setParams
 			var code   = Number(args[1] || 0);
-			//var values = args.concat();
-			//values.shift();
-			//values.shift();
 			var values = args.concat().splice(2);
 			MK_SpriteAnimManager.setAnimParams(code, values);
 		}
@@ -737,20 +846,20 @@ Game_Interpreter.prototype.pluginCommand = function (command, args) {
 (function() {
 
 // 制作保存内容
-var _MK_DataManager_makeSaveContents = DataManager.makeSaveContents;
+const _MK_DataManager_makeSaveContents = DataManager.makeSaveContents;
 DataManager.makeSaveContents = function() {
-    var contents = _MK_DataManager_makeSaveContents.apply(this, arguments);
-    contents.MK_SpriteAnimManager_UAnim = MK_SpriteAnimManager._userAnimMapping;
-    contents.MK_SpriteAnimManager_Param = MK_SpriteAnimManager._animParam;
-    return contents;
+	var contents = _MK_DataManager_makeSaveContents.apply(this, arguments);
+	contents.MK_SpriteAnimManager_UAnim = MK_SpriteAnimManager._userAnimMapping;
+	contents.MK_SpriteAnimManager_Param = MK_SpriteAnimManager._animParam;
+	return contents;
 };
 
 // 提取保存内容
-var _MK_DataManager_extractSaveContents = DataManager.extractSaveContents;
+const _MK_DataManager_extractSaveContents = DataManager.extractSaveContents;
 DataManager.extractSaveContents = function(contents) {
-    _MK_DataManager_extractSaveContents.apply(this, arguments);
-    MK_SpriteAnimManager._userAnimMapping = contents.MK_SpriteAnimManager_UAnim || [];
-    MK_SpriteAnimManager._animParam = contents.MK_SpriteAnimManager_Param || [];
+	_MK_DataManager_extractSaveContents.apply(this, arguments);
+	MK_SpriteAnimManager._userAnimMapping = contents.MK_SpriteAnimManager_UAnim || [];
+	MK_SpriteAnimManager._animParam = contents.MK_SpriteAnimManager_Param || [];
 };
 
 })();
@@ -759,2193 +868,14 @@ DataManager.extractSaveContents = function(contents) {
 
 
 
-// --------------------------------
-// 插件参数初始化动画参数
-
-(function() {
-
-	// 提取插件参数
-
-	var pluginName = 'MK_SpriteAnimManager';
-	MK_Data.paramGet[pluginName] = MK_Data.getPluginParam(pluginName);
-	MK_Data.param[pluginName] = {};
-	MK_Data.paramParse[pluginName] = {};
-
-	var paramGet   = MK_Data.paramGet[pluginName];
-	var param      = MK_Data.param[pluginName];
-	var paramParse = MK_Data.paramParse[pluginName];
-
-	function parseAnimParam(str) {
-		str = str || '{"index":0,"key":"","value":""}';
-		var data = JSON.parse(str);
-		data.index = Number(data.index ||  0);
-		data.key   = String(data.key   || '');
-		data.value = String(data.value || '');
-		return data;
-	}
-	paramParse['parseAnimParam'] = parseAnimParam;
-
-	function parseAnimParams(str) {
-		str = str || '{"animCode":100,"baseAnimCode":0,"params":[]}';
-		var data = JSON.parse(str);
-		data.animCode     = Number(data.animCode     || 100);
-		data.baseAnimCode = Number(data.baseAnimCode ||   0);
-		data.params       = JSON.parse(data.params || '[]');
-		for (var i = 0; i < data.params.length; i++) {
-			data.params[i] = parseAnimParam(data.params[i]);
-		}
-		return data;
-	}
-	paramParse['parseAnimParams'] = parseAnimParams;
-
-	function getAnimParamsConfig(str) {
-		str = str || '[]';
-		var data = JSON.parse(str);
-		for (var i = 0; i < data.length; i++) {
-			data[i] = parseAnimParams(data[i]);
-		}
-		return data;
-	}
-	paramParse['getAnimParamsConfig'] = getAnimParamsConfig;
-
-	param['animParamsConfig'] = getAnimParamsConfig(paramGet['AnimParamsConfig'] || '[]');
-
-
-	// 写入动画参数
-	/*
-	param['animParamsConfig'].forEach(function(animParams) {
-		MK_SpriteAnimManager.setUserMapping(animParams.animCode, animParams.baseAnimCode);
-		animParams.params.forEach(function(params) {
-			if (!!params.key) {
-				MK_SpriteAnimManager.setAnimParamByKey(
-					animParams.animCode, params.key, params.value);
-			}
-			else {
-				MK_SpriteAnimManager.setAnimParam(
-					animParams.animCode, params.index, params.value);
-			}
-		});
-	});
-	*/
-	// ？此时还没有初始化动画类列表 ...
-	// ？所以找不到类的参数映射表 ...
-	
-})();
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_SpriteAnimBase
-// 精灵动画基类
-
-// 用来 控制文本精灵动画的类(动画类) 的基类
-// 定义了 控制文本精灵动画的类(动画类) 的接口
-
-// 一个动画类实例指定一个需要控制的精灵
-// 动画相关数据存在动画类实例中，而不储存在精灵中
-// 动画类实例可以挂在文本精灵(MK_TextAminSprite)中被精灵调用帧更新，也可以在其他地方调用帧更新
-// 动画分为多个阶段(见下方动画流程)，阶段之间的变化在动画类实例的帧更新中完成
-
-// ？TODO : 直接把动画类做成精灵，让父精灵自动调用动画类帧更新，同时减少对文本精灵的耦合 ...
-
-// ？有些动画不能只由一个精灵完成 ...
-// ？可能需要多个精灵共同配合 ...
-// ？所以目标不能只有一个，而应该是一个列表 ...
-
-// 动画流程 v0.1
-// on_create  -> on_play  -> on_update -> on_stop -> on_destroy
-// (on_start)       ↑           ↓            ↑       (on_end)
-// (on_draw)  on_continue <- on_pause  ->    ↑
-
-// 动画流程 v0.2
-// 针对播放前、暂停时可能也需要进行操作，添加一些新的阶段
-// 改名on_update为on_playing，以区别update的开始与结束之间的阶段
-// 针对可能需要不管阶段的日常操作，添加帧更新开始和结束的阶段
-// 改变流程绘制格式
-// 添加阶段标识
-// 添加阶段变换条件
-// 区分瞬时阶段和循环阶段
-// update {
-//     on_update_start
-//     on_update {
-//         phase :   0 -> [auto]     -> on_start -> phase : 101
-//         // ？on_create on_start on_draw 决定是on_start，而on_create作为创建动画示例的触发
-// 
-//         phase : 101 -> [auto]     -> on_pending  -> phase : 101  {loop}
-//         phase : 101 -> [play]     -> on_play     -> phase : 102
-//         phase : 102 -> [auto]     -> on_playing  -> phase : 102  {loop}
-//         phase : 102 -> [stop]     -> on_stop     -> phase : 103
-// 
-//         phase : 102 -> [pause]    -> on_pause    -> phase : 201
-//         phase : 201 -> [auto]     -> on_pausing  -> phase : 201  {loop}
-//         phase : 201 -> [continue] -> on_continue -> phase : 102
-//         phase : 201 -> [stop]     -> on_stop     -> phase : 103
-//
-//         phase : 103 -> [auto]     -> on_destroy  -> phase :  -1
-//
-//         phase :  -1 -> [init]     -> on_init     -> phase :   0
-//     }
-//     on_update_end
-// }
-// ？同时，因为要考虑播放时加入精灵，所以还要有一个initTarget方法
-// on_addTarget
-// on_initTarget
-// 
-// 操作(operation)
-// on_create
-// on_start
-// on_pending
-// on_play
-// on_playing
-// on_pause
-// on_pausing
-// on_continue
-// on_stop
-// on_destroy
-// on_init
-// 阶段(phase)
-//   0 : 未创建
-// - 1 : 已销毁
-// 101 : 准备
-// 102 : 开始
-// 103 : 停止
-// 201 : 暂停
-// 标志(flag)
-// [auto] 无条件，也作为一种标志
-// [play]
-// [pause]
-// [continue]
-// [stop]
-// [init]
-// [enabled] 启用
-// [allowAdd] 允许添加
-
-// ？TODO : 用配置表配置流程变化，使派生类可以添加新阶段，并自定义流程 ...
-
-function MK_SpriteAnimBase() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_SpriteAnimBase.prototype = Object.create(Object.prototype);
-MK_SpriteAnimBase.prototype.constructor = MK_SpriteAnimBase;
-
-MK_SpriteAnimBase.prototype.initialize = function(code) {
-	// 动画code
-	//this._animCode = 0;
-	this.initAnimCode(code);
-
-	// 参数映射
-	// ？参数映射存在类实例中，而不是类中 ...
-	// ？FINISH : 类中的需要时再初始化，而不是实例化一个类来获取 ...
-	this._paramMapTable = {};
-	this.initParamMapTable();
-
-	// 目标
-	//this._target = null;
-	this._targets = [];
-
-	// 阶段
-	this._phase = 0;
-
-	// 标志
-	this._flagAuto = true;
-	this._flagPlay = false;
-	this._flagPause = false;
-	this._flagContinue = false;
-	this._flagStop = false;
-	this._flagInit = false;
-
-	this._flagEnabled = true; // 是否启用的标记，用来禁用
-	this._flagAllowAdd = true; // ？是否允许添加精灵 ...
-
-	this.onCreate();
-};
-
-
 
 // --------------------------------
-// 动画code
-
-// ？实例化时允许指定code作为用户
-MK_SpriteAnimBase._DEFAULT_ANIM_CODE = 0;
-MK_SpriteAnimBase.prototype.getDefaultAnimCode = function() {
-	return this.constructor._DEFAULT_ANIM_CODE;
-};
-
-MK_SpriteAnimBase.prototype.getAnimCode = function() {
-	return this._animCode;
-};
-MK_SpriteAnimBase.prototype.setAnimCode = function(code) {
-	this._animCode = code;
-};
-
-MK_SpriteAnimBase.prototype.initAnimCode = function(code) {
-	this.setAnimCode(code || this.getDefaultAnimCode());
-};
-
-
-
-// --------------------------------
-// 目标列表
-
-// 对于目标，分为多目标和单目标
-// 多目标对应精灵列表
-// 单目标对应精灵列表中的第一个
-
-// ？精灵分组 ...
-
-MK_SpriteAnimBase.prototype.setTargets = function(sprites) {
-	if (!Array.isArray(sprites)) sprites = [sprites];
-	//this._targets = sprites;
-	this.initTargets();
-	sprites.forEach(function(s) {
-		this.addTarget(s);
-	}, this);
-};
-//MK_SpriteAnimBase.prototype.setTarget = function(sprite, index) {
-//	if (typeof index == 'number') {
-//		this._targets[index] = sprite;
-//	}
-//	else {
-//		//this._targets[index].push(sprite);
-//		this._targets[0] = sprite;
-//	}
-//};
-
-MK_SpriteAnimBase.prototype.getTargets = function() {
-	//return this._targets;
-	return this._targets || [];
-};
-MK_SpriteAnimBase.prototype.getTarget = function(index) {
-	if (typeof index == 'number') {
-		return this._targets[index];
-	}
-	else {
-		return this._targets[0];
-	}
-};
-
-MK_SpriteAnimBase.prototype.initTargets = function() {
-	this._targets = [];
-};
-
-
-
-// --------------------------------
-// 目标对象 (sprite + variable)
-
-// 目标的变量不保存在目标精灵里
-// 而是保存在动画类的目标中，并与精灵对应
-// 所以添加目标时，要同时创建其保存变量的对象
-
-MK_SpriteAnimBase.prototype.createTargetObjWithVar = function(sprite, varObj) {
-	return {
-		'sprite': sprite || null,
-		'var': varObj || {},
-	};
-};
-MK_SpriteAnimBase.prototype.createTargetObj = function(sprite) {
-	return this.createTargetObjWithVar(sprite);
-};
-
-
-
-// --------------------------------
-// 添加目标
-
-MK_SpriteAnimBase.prototype.addTarget = function(sprite) {
-	if (this._flagAllowAdd) {
-		//this.onAddTarget(sprite);
-		//this._targets.push(sprite);
-		var targetObj = this.createTargetObj(sprite);
-		this._targets.push(targetObj);
-		var args = [...arguments].splice(1);
-		this.onAddTarget(targetObj, ...args);
-	}
-};
-
-//MK_SpriteAnimBase.prototype.onAddTarget = function(sprite) {
-MK_SpriteAnimBase.prototype.onAddTarget = function(targetObj) {
-	this.onInitTarget(...arguments);
-};
-
-MK_SpriteAnimBase.prototype.onInitTarget = function(targetObj) {
-};
-
-
-
-// --------------------------------
-// 标记
-
-/*
-MK_SpriteAnimBase.prototype.setFlagAutoOn = function() {
-	this._flagAuto = true;
-};
-MK_SpriteAnimBase.prototype.setFlagAutoOff = function() {
-	this._flagAuto = false;
-};
-MK_SpriteAnimBase.prototype.getFlagAuto = function() {
-	return this._flagAuto;
-};
-
-MK_SpriteAnimBase.prototype.setFlagPlayOn = function() {
-	this._flagPlay = true;
-};
-MK_SpriteAnimBase.prototype.setFlagPlayOff = function() {
-	this._flagPlay = false;
-};
-MK_SpriteAnimBase.prototype.getFlagPlay = function() {
-	return this._flagPlay;
-};
-
-MK_SpriteAnimBase.prototype.setFlagPauseOn = function() {
-	this._flagPause = true;
-};
-MK_SpriteAnimBase.prototype.setFlagPauseOff = function() {
-	this._flagPause = false;
-};
-MK_SpriteAnimBase.prototype.getFlagPause = function() {
-	return this._flagPause;
-};
-
-MK_SpriteAnimBase.prototype.setFlagContinueOn = function() {
-	this._flagContinue = true;
-};
-MK_SpriteAnimBase.prototype.setFlagContinueOff = function() {
-	this._flagContinue = false;
-};
-MK_SpriteAnimBase.prototype.getFlagContinue = function() {
-	return this._flagContinue;
-};
-
-MK_SpriteAnimBase.prototype.setFlagStopOn = function() {
-	this._flagStop = true;
-};
-MK_SpriteAnimBase.prototype.setFlagStopOff = function() {
-	this._flagStop = false;
-};
-MK_SpriteAnimBase.prototype.getFlagStop = function() {
-	return this._flagStop;
-};
-
-MK_SpriteAnimBase.prototype.setFlagInitOn = function() {
-	this._flagInit = true;
-};
-MK_SpriteAnimBase.prototype.setFlagInitOff = function() {
-	this._flagInit = false;
-};
-MK_SpriteAnimBase.prototype.getFlagInit = function() {
-	return this._flagInit;
-};
-*/
-// 兼容合并
-
-MK_SpriteAnimBase.prototype.getAnimFlagKey = function(flagName) {
-	return '_flag' + flagName;
-};
-
-MK_SpriteAnimBase.prototype.setAnimFlag = function(flagName, value) {
-	this[this.getAnimFlagKey(flagName)] = !!value;
-};
-MK_SpriteAnimBase.prototype.setAnimFlagOn = function(flagName) {
-	this.setAnimFlag(flagName, true);
-};
-MK_SpriteAnimBase.prototype.setAnimFlagOff = function(flagName) {
-	this.setAnimFlag(flagName, false);
-};
-MK_SpriteAnimBase.prototype.getAnimFlag = function(flagName) {
-	return this[this.getAnimFlagKey(flagName)];
-};
-
-MK_SpriteAnimBase.prototype.setFlagAutoOn = function() {
-	this.setAnimFlag('Auto', true);
-};
-MK_SpriteAnimBase.prototype.setFlagAutoOff = function() {
-	this.setAnimFlag('Auto', false);
-};
-MK_SpriteAnimBase.prototype.setFlagPlayOn = function() {
-	this.setAnimFlag('Play', true);
-};
-MK_SpriteAnimBase.prototype.setFlagPlayOff = function() {
-	this.setAnimFlag('Play', false);
-};
-MK_SpriteAnimBase.prototype.setFlagPauseOn = function() {
-	this.setAnimFlag('Pause', true);
-};
-MK_SpriteAnimBase.prototype.setFlagPauseOff = function() {
-	this.setAnimFlag('Pause', false);
-};
-MK_SpriteAnimBase.prototype.setFlagContinueOn = function() {
-	this.setAnimFlag('Continue', true);
-};
-MK_SpriteAnimBase.prototype.setFlagContinueOff = function() {
-	this.setAnimFlag('Continue', false);
-};
-MK_SpriteAnimBase.prototype.setFlagStopOn = function() {
-	this.setAnimFlag('Stop', true);
-};
-MK_SpriteAnimBase.prototype.setFlagStopOff = function() {
-	this.setAnimFlag('Stop', false);
-};
-MK_SpriteAnimBase.prototype.setFlagInitOn = function() {
-	this.setAnimFlag('Init', true);
-};
-MK_SpriteAnimBase.prototype.setFlagInitOff = function() {
-	this.setAnimFlag('Init', false);
-};
-
-MK_SpriteAnimBase.prototype.setFlagEnabledOn = function() {
-	this.setAnimFlag('Enabled', true);
-};
-MK_SpriteAnimBase.prototype.setFlagEnabledOff = function() {
-	this.setAnimFlag('Enabled', false);
-};
-
-MK_SpriteAnimBase.prototype.setFlagAllowAddOn = function() {
-	this.setAnimFlag('AllowAdd', true);
-};
-MK_SpriteAnimBase.prototype.setFlagAllowAddOff = function() {
-	this.setAnimFlag('AllowAdd', false);
-};
-
-
-
-// --------------------------------
-// 阶段操作
-
-MK_SpriteAnimBase.prototype.onCreate = function() {
-};
-
-MK_SpriteAnimBase.prototype.onStart = function() {
-};
-
-MK_SpriteAnimBase.prototype.onPending = function() {
-};
-MK_SpriteAnimBase.prototype.onPlay = function() {
-};
-MK_SpriteAnimBase.prototype.onPlaying = function() {
-};
-MK_SpriteAnimBase.prototype.onStop = function() {
-};
-
-MK_SpriteAnimBase.prototype.onPause = function() {
-};
-MK_SpriteAnimBase.prototype.onPausing = function() {
-};
-MK_SpriteAnimBase.prototype.onContinue = function() {
-};
-
-MK_SpriteAnimBase.prototype.onInit = function() {
-};
-
-MK_SpriteAnimBase.prototype.onDestroy = function() {
-};
-
-MK_SpriteAnimBase.prototype.onUpdateStart = function() {
-};
-MK_SpriteAnimBase.prototype.onUpdate = function() {
-	// 按顺序并行判断操作是否要进行
-	// ？TODO : 用配置代替硬编码，让判断的各种条件(phase,phaseTo,flag,operation)可以在配置中更改 ...
-
-	if (this._phase ==   0 && this._flagAuto) {
-		//this.onCreate();
-		this.onStart();
-		this._phase  = 101;
-	}
-
-	if (this._phase == 101 && this._flagAuto) {
-		this.onPending();
-	}
-	if (this._phase == 101 && this._flagPlay) {
-		this.onPlay();
-		this._phase  = 102;
-		this._flagPlay = false;
-	}
-	if (this._phase == 102 && this._flagAuto) {
-		this.onPlaying();
-	}
-	if (this._phase == 102 && this._flagStop) {
-		this.onStop();
-		this._phase  = 103;
-		this._flagStop = false;
-	}
-
-	if (this._phase == 102 && this._flagPause) {
-		this.onPause();
-		this._phase  = 201;
-		this._flagPause = false;
-	}
-	if (this._phase == 201 && this._flagAuto) {
-		this.onPausing();
-	}
-	if (this._phase == 201 && this._flagContinue) {
-		this.onContinue();
-		this._phase  = 102;
-		this._flagContinue = false;
-	}
-
-	if (this._phase == 103 && this._flagAuto) {
-		this.onDestroy();
-		this._phase  =  -1;
-	}
-
-	if (this._phase ==  -1 && this._flagInit) {
-		this.onInit();
-		this._phase  =   0;
-		this._flagInit = false;
-	}
-};
-MK_SpriteAnimBase.prototype.onUpdateEnd = function() {
-};
-
-MK_SpriteAnimBase.prototype.update = function() {
-	if (this._flagEnabled) {
-		this.onUpdateStart();
-		this.onUpdate();
-		this.onUpdateEnd();
-	}
-};
-
-
-
-// --------------------------------
-// 参数配置
-
-// [index -> [key, type, defaultValue]]
-// type : string, number
-// ？eval 类型 ...
-// ？派生类必须重新设置这个 ...
-// ？MK_SpriteAnimBase.prototype._PARAM_CONFIG ...
-MK_SpriteAnimBase._PARAM_CONFIG = [
-];
-
-/*
-MK_SpriteAnimBase.getParamConfig = function() {
-	return this._PARAM_CONFIG;
-};
-*/
-
-MK_SpriteAnimBase.prototype.getParamConfig = function() {
-	return this.constructor._PARAM_CONFIG;
-};
-
-// ？相同类设置了不同的code，共用这个参数配置，这个参数实际是默认参数 ...
-// ？实例自己的参数放在MK_SpriteAnimManager，通过管理器获取和修改参数 ...
-// ？基础动画参数，通过插件参数进行修改，用户自定义动画参数，通过插件指令进行修改 ...
-
-// ？MK_SpriteAnimBase 的参数获取 与 MK_SpriteAnimManager 耦合 ...
-// ？TODO : 解耦合 ...
-// ？其实 MK_SpriteAnimManager都是静态方法 完全可以直接写成 MK_SpriteAnimBase 的静态方法，只是因为更好看 ...
-
-
-
-// --------------------------------
-// 参数映射
-
-
-// [index -> key]
-//MK_SpriteAnimBase._PARAM_KEY_LIST = [
-//];
-
-/*
-MK_SpriteAnimBase._paramMapTable = null;
-// ？需要时再初始化 ...
-
-MK_SpriteAnimBase.touchParamMapTable = function() {
-	if (!this._paramMapTable) {
-		this.initParamMapTable();
-	}
-};
-MK_SpriteAnimBase.initParamMapTable = function() {
-	this._paramMapTable = [];
-	var keyList = this.getParamConfig();
-	for (var i = 0; i < keyList.length; i++) {
-		this._paramMapTable[keyList[i][0]] = i;
-	}
-};
-*/
-
-// {key -> index}
-MK_SpriteAnimBase.prototype.initParamMapTable = function() {
-	this._paramMapTable = {};
-	// TODO : 改 硬编码 为 可以从配置文件更改
-	//var keyList = this.constructor._PARAM_KEY_LIST;
-	//for (var i = 0; i < keyList.length; i++) {
-	//	this._paramMapTable[keyList[i]] = i;
-	//}
-	var keyList = this.getParamConfig();
-	for (var i = 0; i < keyList.length; i++) {
-		//this._paramMapTable[keyList[i]][0] = i;
-		this._paramMapTable[keyList[i][0]] = i;
-	}
-};
-
-/*
-MK_SpriteAnimBase.getParamIndex = function(key) {
-	this.touchParamMapTable();
-	var index = this._paramMapTable[key];
-	if (0 <= index) {
-		return index;
-	}
-	else {
-		console.error('key ' + key + ' not found');
-		return 0;
-	}
-};
-*/
-// ？派生类不会继承这个方法 ...
-
-MK_SpriteAnimBase.prototype.getParamIndex = function(key) {
-	var index = this._paramMapTable[key];
-	if (0 <= index) {
-		return index;
-	}
-	else {
-		console.error('key ' + key + ' not found');
-		return 0;
-	}
-};
-
-
-
-// --------------------------------
-// 默认参数
-
-// [index -> value]
-//MK_SpriteAnimBase._PARAM_DEFAULT_VALUE_LIST = [
-//];
-//MK_SpriteAnimBase.prototype.getDefaultParams = function() {
-//	return this.constructor._PARAM_DEFAULT_VALUE_LIST;
-//};
-//MK_SpriteAnimBase.prototype.getDefaultParam = function(index) {
-//	return this.getDefaultParams()[index];
-//};
-MK_SpriteAnimBase.prototype.getDefaultParam = function(index) {
-	return (this.getParamConfig()[index] || [])[2];
-};
-
-
-
-// --------------------------------
-// 参数类型
-
-// 得到参数的类型
-MK_SpriteAnimBase.prototype.getParamType = function(index) {
-	return (this.getParamConfig()[index] || [])[1];
-};
-// 得到类型化后的参数
-MK_SpriteAnimBase.prototype.getTypedParam = function(param, index) {
-	var type = this.getParamType(index);
-	if (type == 'number') {
-		return Number(param);
-	}
-	else if (type == 'string') {
-		return String(param);
-	}
-	else {
-		return param;
-	}
-};
-
-
-
-// --------------------------------
-// 获取参数
-
-MK_SpriteAnimBase.prototype.getParams = function() {
-	return MK_SpriteAnimManager.getAnimParams(this.getAnimCode()) || [];
-};
-MK_SpriteAnimBase.prototype.getParamByIndex = function(index) {
-	//return this.getParams()[index];
-	var value = this.getParams()[index];
-	if (value == null || typeof value == 'undefined') {
-		// 缺少时，使用默认参数
-		return this.getDefaultParam(index);
-	}
-	else {
-		return this.getTypedParam(value, index);
-	}
-};
-MK_SpriteAnimBase.prototype.getParamByKey = function(key) {
-	var index = this.getParamIndex(key);
-	return this.getParamByIndex(index);
-};
-MK_SpriteAnimBase.prototype.getParam = function(key) {
-	if (typeof key == 'number') {
-		return this.getParamByIndex(key);
-	}
-	else {
-		return this.getParamByKey(key);
-	}
-};
-
-// TODO : 是否会影响到效率
-// ？TODO : 改成只用key ...
-
-// ？TODO : 或者 每次流程开始 获取所有参数，但不会更新流程中修改的参数 ...
-
-
-
-// --------------------------------
-// 设置参数
-
-// ？通过 MK_SpriteAnimBase 的 code 对 MK_SpriteAnimManager 修改对应参数 ...
-// ？可以做到 key 对 index 的映射 ...
-
-// 其他注释见 本类的 【参数配置】
-
-MK_SpriteAnimBase.prototype.setParamWithCode = function(code, index, value) {
-	MK_SpriteAnimManager.setAnimParam(code, index, value);
-};
-MK_SpriteAnimBase.prototype.setParamByKeyWithCode = function(code, key, value) {
-	var index = this.getParamIndex(key);
-	MK_SpriteAnimManager.setParamWithCode(code, index, value);
-};
-
-MK_SpriteAnimBase.prototype.setParam = function(index, value) {
-	var code = this.getAnimCode();
-	MK_SpriteAnimManager.setAnimParam(code, index, value);
-};
-MK_SpriteAnimBase.prototype.setParamByKey = function(key, value) {
-	var code = this.getAnimCode();
-	MK_SpriteAnimManager.setAnimParam(code, index, value);
-};
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnimBase
-// 文本动画基类
-
-// 区别于普通的MK_SpriteAnimBase，MK_TextAnimBase更加适合做文本的动画
-// 允许设置消息窗口(messageWindow)或其contents和textStatus
-// 以解决 需要获取messageWindow的contents和textStatus的功能 不方便改写MK_SpriteAnimBase 的尴尬
-
-function MK_TextAnimBase() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnimBase.prototype = Object.create(MK_SpriteAnimBase.prototype);
-MK_TextAnimBase.prototype.constructor = MK_TextAnimBase;
-
-// 派生类必须重新设置这个
-MK_TextAnimBase._PARAM_CONFIG = [
-];
-
-MK_TextAnimBase.prototype.initialize = function(code, msgWindow) {
-	MK_SpriteAnimBase.prototype.initialize.apply(this, arguments);
-
-	// 消息窗口
-	this._msgWindow = msgWindow;
-};
-
-
-
-// --------------------------------
-// 消息窗口
-
-MK_TextAnimBase.prototype.setMsgWindow = function(msgWindow) {
-	this._msgWindow = msgWindow;
-};
-MK_TextAnimBase.prototype.getMsgWindow = function() {
-	return this._msgWindow;
-};
-
-MK_TextAnimBase.prototype.getMsgTextStatus = function() {
-	if (!this._msgWindow) return null;
-	else return this._msgWindow._textState; 
-};
-
-MK_TextAnimBase.prototype.getMsgContents = function() {
-	if (!this._msgWindow) return null;
-	else return this._msgWindow.contents; 
-};
-
-
-
-// --------------------------------
-// 添加目标
-
-// 示例
-//MK_TextAnimBase.prototype.onAddTarget = function(targetObj, textStatus, contents) {
-//	MK_SpriteAnimBase.prototype.onAddTarget.apply(this, arguments);
-//	textStatus = textStatus || this.getMsgTextStatus;
-//	contents   = contents   || this.getMsgContents;
-//};
-
-// 示例
-//MK_TextAnimBase.prototype.onInitTarget = function(targetObj, textStatus, contents) {
-//	MK_SpriteAnimBase.prototype.onInitTarget.apply(this, arguments);
-//	textStatus = textStatus || this.getMsgTextStatus;
-//	contents   = contents   || this.getMsgContents;
-//};
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnim_Fade
-// 文本动画派生类-fade
-
-function MK_TextAnim_Fade() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Fade.prototype = Object.create(MK_TextAnimBase.prototype);
-MK_TextAnim_Fade.prototype.constructor = MK_TextAnim_Fade;
-
-MK_TextAnim_Fade._DEFAULT_ANIM_CODE = 1;
-
-MK_TextAnim_Fade._PARAM_CONFIG = [
-	['opacityStart', 	'number', 0],
-	['opacityEnd', 		'number', 255],
-	['opacitySpeed', 	'number', 5],
-];
-
-////MK_TextAnim_Fade.prototype.onCreate = function() {
-////	MK_TextAnimBase.prototype.onCreate.apply(this, arguments);
-//MK_TextAnim_Fade.prototype.onStart = function() {
-//	MK_TextAnimBase.prototype.onStart.apply(this, arguments);
-//	////this._targets.forEach(function(s) {
-//	////	s.opacity = 0;
-//	////}, this);
-//	////this._targets[0].opacity = 0;
-//	//var s = this.getTarget();
-//	//if (!s) return ;
-//	////s.opacity = 0;
-//	//s.opacity = this.getParam('opacityStart');
-//	var opacityStart = this.getParam('opacityStart');
-//	this.getTargets().forEach(function(obj) {
-//		if (!obj || !obj.sprite) return ;
-//		s = obj.sprite;
-//		v = obj.var;
-//		s.opacity = opacityStart;
-//	}, this);
-//};
-MK_TextAnim_Fade.prototype.onInitTarget = function(obj) {
-	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	if (!obj || !obj.sprite) return ;
-	s = obj.sprite;
-	v = obj.var;
-
-	var opacityStart = this.getParam('opacityStart');
-
-	s.opacity = opacityStart;
-};
-
-MK_TextAnim_Fade.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	////if (s.opacity < this.getParam('opacityEnd')) {
-	////	s.opacity += this.getParam('opacitySpeed');
-	////}
-	////else {
-	////	this.setFlagStopOn();
-	////}
-	//// ？不一定从小变大，也能从大变小 ...
-	//var startO = this.getParam('opacityStart');
-	//var   endO = this.getParam('opacityEnd'  );
-	//var speedO = this.getParam('opacitySpeed');
-	//var hasChange = false;
-	//var   nowO = s.opacity;
-	//if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-	//	// 在变化范围(startO~endO)内
-	//	s.opacity += speedO;
-	//	hasChange = true;
-	//}
-	//if (!hasChange) {
-	//	this.setFlagStopOn();
-	//}
-
-	// ？部分动画不再自动停止 ...
-	// ？因为目标精灵可能在播放时添加 ...
-	// ？保证目标精灵在结束状态下时不再变化即可 ...
-
-	var startO = this.getParam('opacityStart');
-	var   endO = this.getParam('opacityEnd'  );
-	var speedO = this.getParam('opacitySpeed');
-	this.getTargets().forEach(function(obj) {
-		if (!obj || !obj.sprite) return ;
-		s = obj.sprite;
-		v = obj.var;
-		var nowO = s.opacity;
-		if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-			// 在变化范围(startO~endO)内
-			s.opacity += speedO;
-		}
-	}, this);
-};
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnim_Zoom
-// 文本动画派生类-zoom
-
-function MK_TextAnim_Zoom() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Zoom.prototype = Object.create(MK_TextAnimBase.prototype);
-MK_TextAnim_Zoom.prototype.constructor = MK_TextAnim_Zoom;
-
-MK_TextAnim_Zoom._DEFAULT_ANIM_CODE = 2;
-
-MK_TextAnim_Zoom._PARAM_CONFIG = [
-	['opacityStart', 	'number', 0],
-	['opacityEnd', 		'number', 255],
-	['opacitySpeed', 	'number', 4],
-	['scaleXStart', 	'number', 2.0],
-	['scaleXEnd', 		'number', 1.0],
-	['scaleXSpeed', 	'number', -0.04],
-	['scaleYStart', 	'number', 2.0],
-	['scaleYEnd', 		'number', 1.0],
-	['scaleYSpeed', 	'number', -0.04],
-];
-
-MK_TextAnim_Zoom.prototype.onInitTarget = function(obj) {
-	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	if (!obj || !obj.sprite) return ;
-	s = obj.sprite;
-	v = obj.var;
-
-	var opacityStart = this.getParam('opacityStart');
-	var scaleXStart  = this.getParam('scaleXStart');
-	var scaleYStart  = this.getParam('scaleYStart');
-
-	s.opacity = opacityStart;
-	s.scale.x = scaleXStart;
-	s.scale.y = scaleYStart;
-};
-
-MK_TextAnim_Zoom.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//var startO = this.getParam('opacityStart');
-	//var   endO = this.getParam('opacityEnd'  );
-	//var speedO = this.getParam('opacitySpeed');
-	//var startX = this.getParam('scaleXStart');
-	//var   endX = this.getParam('scaleXEnd'  );
-	//var speedX = this.getParam('scaleXSpeed');
-	//var startY = this.getParam('scaleYStart');
-	//var   endY = this.getParam('scaleYEnd'  );
-	//var speedY = this.getParam('scaleYSpeed');
-	//
-	//var hasChange = false;
-	//
-	//var   nowO = s.opacity;
-	//if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-	//	// 在变化范围(startO~endO)内
-	//	s.opacity += speedO;
-	//	hasChange = true;
-	//}
-	//var   nowX = s.scale.x;
-	//if ((startX <= nowX && nowX < endX) || (startX >= nowX && nowX > endX)) {
-	//	// 在变化范围(startO~endO)内
-	//	s.scale.x += speedX;
-	//	hasChange = true;
-	//}
-	//else {
-	//	s.scale.x = endX;
-	//}
-	//var   nowY = s.scale.y;
-	//if ((startY <= nowY && nowY < endY) || (startY >= nowY && nowY > endY)) {
-	//	// 在变化范围(startO~endO)内
-	//	s.scale.y += speedY;
-	//	hasChange = true;
-	//}
-	//else {
-	//	s.scale.y = endY;
-	//}
-	//
-	//if (!hasChange) {
-	//	this.setFlagStopOn();
-	//}
-
-	var startO = this.getParam('opacityStart');
-	var   endO = this.getParam('opacityEnd'  );
-	var speedO = this.getParam('opacitySpeed');
-	var startX = this.getParam('scaleXStart');
-	var   endX = this.getParam('scaleXEnd'  );
-	var speedX = this.getParam('scaleXSpeed');
-	var startY = this.getParam('scaleYStart');
-	var   endY = this.getParam('scaleYEnd'  );
-	var speedY = this.getParam('scaleYSpeed');
-
-	this.getTargets().forEach(function(obj) {
-		if (!obj || !obj.sprite) return ;
-		s = obj.sprite;
-		v = obj.var;
-		var   nowO = s.opacity;
-		if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-			// 在变化范围(startO~endO)内
-			s.opacity += speedO;
-		}
-		var   nowX = s.scale.x;
-		if ((startX <= nowX && nowX < endX) || (startX >= nowX && nowX > endX)) {
-			// 在变化范围(startO~endO)内
-			s.scale.x += speedX;
-		}
-		else {
-			s.scale.x = endX;
-		}
-		var   nowY = s.scale.y;
-		if ((startY <= nowY && nowY < endY) || (startY >= nowY && nowY > endY)) {
-			// 在变化范围(startO~endO)内
-			s.scale.y += speedY;
-		}
-		else {
-			s.scale.y = endY;
-		}
-	}, this);
-};
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnim_Zoom2
-// 文本动画派生类-zoom2
-
-function MK_TextAnim_Zoom2() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Zoom2.prototype = Object.create(MK_TextAnim_Zoom.prototype);
-MK_TextAnim_Zoom2.prototype.constructor = MK_TextAnim_Zoom2;
-
-MK_TextAnim_Zoom2._DEFAULT_ANIM_CODE = 3;
-
-MK_TextAnim_Zoom2._PARAM_CONFIG = [
-	['opacityStart', 	'number', 0],
-	['opacityEnd', 		'number', 255],
-	['opacitySpeed', 	'number', 4],
-	['scaleXStart', 	'number', -1.0],
-	['scaleXEnd', 		'number', 1.0],
-	['scaleXSpeed', 	'number', +0.02],
-	['scaleYStart', 	'number', 2.0],
-	['scaleYEnd', 		'number', 1.0],
-	['scaleYSpeed', 	'number', -0.02],
-];
-
-
-
-
-
-/*
-// ----------------------------------------------------------------
-// MK_TextAnim_Wipe
-// 文本动画派生类-wipe
-
-function MK_TextAnim_Shake() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Wipe.prototype = Object.create(MK_TextAnimBase.prototype);
-MK_TextAnim_Wipe.prototype.constructor = MK_TextAnim_Wipe;
-
-MK_TextAnim_Wipe._DEFAULT_ANIM_CODE = 4;
-
-MK_TextAnim_Wipe._PARAM_CONFIG = [
-];
-
-MK_TextAnim_Wipe.prototype.onStart = function() {
-	MK_TextAnimBase.prototype.onStart.apply(this, arguments);
-	var s = this.getTarget();
-	if (!s) return ;
-	//var np = this._letters[i].d === 0 ? this.fontsz() + 20 : -(this.fontsz() + 20);
-	//if (this.pos() === 0) {
-	//	this._letters[i].y += np;
-	//} else {
-	//	this._letters[i].x += np;
-	//};
-};
-/*
-xxx.onInitTarget = function(obj) {
-	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	if (!obj || !obj.sprite) return ;
-	s = obj.sprite;
-	v = obj.var;
-	* /
-
-MK_TextAnim_Wipe.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	var s = this.getTarget();
-	if (!s) return ;
-
-	this.getTargets().forEach(function(obj) {
-		if (!obj || !obj.sprite) return ;
-		s = obj.sprite;
-		v = obj.var;
-	}, this);
-
-	if (this.pos() === 0) { // ？...
-		if (s.y > s.org[1]) {
-			s.y -= 1.5;
-			if (s.y < s.org[1]) { s.y = s.org[1] };
-		}
-		else if (s.y < s.org[1]) {
-			s.y += 1.5;
-			if (s.y > s.org[1]) { s.y = s.org[1] };		 
-		};
-	} else {
-		if (s.x > s.org[0]) {
-			s.x -= 1.5;
-			if (s.x < s.org[0]) { s.x = s.org[0] };
-		}
-		else if (s.x < s.org[0]) {
-			s.x += 1.5;
-			if (s.x > s.org[0]) { s.x = s.org[0] };		 
-		};
-	};
-};
-
-MK_TextAnim_Wipe.prototype.onStop = function() {
-	MK_TextAnimBase.prototype.onStop.apply(this, arguments);
-	var s = this.getTarget();
-	if (!s) return ;
-};
-*/
-// TODO
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnim_Shake
-// 文本动画派生类-shake
-
-function MK_TextAnim_Shake() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Shake.prototype = Object.create(MK_TextAnimBase.prototype);
-MK_TextAnim_Shake.prototype.constructor = MK_TextAnim_Shake;
-
-MK_TextAnim_Shake._DEFAULT_ANIM_CODE = 5;
-
-MK_TextAnim_Shake._PARAM_CONFIG = [
-	['shakeWaitCount', 	'number', 3], // 震动等待计数(震动速度)
-	['shakeAmplitude', 	'number', 3], // 震动幅度
-	['shakeNeedStop', 	'number', 0], // 是否需要停止 (>0:需要)
-	['shakeTotalCount', 'number', 12], // 震动总计数(震动时间)
-];
-// ？总帧数 是 整体帧数 还是 每个精灵的帧数 ...
-// ？选择后者，因为前者可以用等待加手动停止实现 ...
-
-MK_TextAnim_Shake.prototype.onInitTarget = function(obj) {
-	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//this._shakeCount = 0;
-	//this._shakeWaitCount = 0;
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//this._orgX = s.x;
-	//this._orgY = s.y;
-
-	if (!obj || !obj.sprite) return ;
-	s = obj.sprite;
-	v = obj.var;
-
-	v._orgX = s.x;
-	v._orgY = s.y;
-	v._shakeCount = 0;
-	v._shakeWaitCount = 0;
-};
-
-MK_TextAnim_Shake.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var needStop = this.getParam('shakeNeedStop');
-	//var totalCount = this.getParam('shakeTotalCount');
-	//var waitCount = this.getParam('shakeWaitCount');
-	//var amplitude = this.getParam('shakeAmplitude');
-	//
-	//this._shakeWaitCount++;
-	//if (this._shakeWaitCount < waitCount) {
-	//	this._shakeWaitCount = 0;
-	//	var rnd1 = Math.randomInt(2 * amplitude) - amplitude;
-	//	var rnd2 = Math.randomInt(2 * amplitude) - amplitude;
-	//	s.x = rnd1 + this._orgX;
-	//	s.y = rnd2 + this._orgY;
-	//}
-	//
-	//this._shakeCount++;
-	//if (needStop > 0 && this._shakeCount >= totalCount) {
-	//	this.setFlagStopOn();
-	//}
-
-	var waitCount = this.getParam('shakeWaitCount');
-	var amplitude = this.getParam('shakeAmplitude');
-	var needStop = this.getParam('shakeNeedStop');
-	var totalCount = this.getParam('shakeTotalCount');
-
-	this.getTargets().forEach(function(obj) {
-		if (!obj || !obj.sprite) return ;
-		s = obj.sprite;
-		v = obj.var;
-		if (needStop > 0 && v._shakeCount >= totalCount) {
-			s.x = v._orgX;
-			s.y = v._orgY;
-		}
-		else {
-			v._shakeCount++;
-			v._shakeWaitCount++;
-			if (v._shakeWaitCount >= waitCount) {
-				v._shakeWaitCount = 0;
-				var rnd1 = Math.randomInt(2 * amplitude) - amplitude;
-				var rnd2 = Math.randomInt(2 * amplitude) - amplitude;
-				s.x = rnd1 + v._orgX;
-				s.y = rnd2 + v._orgY;
-			}
-		}
-	}, this);
-};
-
-//MK_TextAnim_Shake.prototype.onStop = function() {
-//	MK_TextAnimBase.prototype.onStop.apply(this, arguments);
-//	var s = this.getTarget();
-//	if (!s) return ;
-//	s.x = s._orgX;
-//	s.y = s._orgY;
-//};
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnim_Zoom3
-// 文本动画派生类-zoom3
-
-function MK_TextAnim_Zoom3() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Zoom3.prototype = Object.create(MK_TextAnim_Zoom.prototype);
-MK_TextAnim_Zoom3.prototype.constructor = MK_TextAnim_Zoom3;
-
-MK_TextAnim_Zoom3._DEFAULT_ANIM_CODE = 6;
-
-MK_TextAnim_Zoom3._PARAM_CONFIG = [
-	['opacityStart', 	'number', 0],
-	['opacityEnd', 		'number', 255],
-	['opacitySpeed', 	'number', 20],
-	['scaleXStart', 	'number', 4.0],
-	['scaleXEnd', 		'number', 1.0],
-	['scaleXSpeed', 	'number', -0.2],
-	['scaleYStart', 	'number', 4.0],
-	['scaleYEnd', 		'number', 1.0],
-	['scaleYSpeed', 	'number', -0.2],
-	['shakeAmplitude', 	'number', 3], // 震动幅度
-	['shakeWaitCount', 	'number', 3],  // 震动等待计数(震动速度)
-	['shakeNeedStop', 	'number', 0], // 是否需要停止 (>0:需要)
-	['shakeTotalCount', 'number', 12], // 震动总计数(震动时间)
-];
-
-MK_TextAnim_Zoom3.prototype.onInitTarget = function(obj) {
-	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//this._subPhase = 1;
-	//this._shakeCount = 0;
-	//this._shakeWaitCount = 0;
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//this._orgX = s.x;
-	//this._orgY = s.y;
-
-	if (!obj || !obj.sprite) return ;
-	s = obj.sprite;
-	v = obj.var;
-
-	var opacityStart = this.getParam('opacityStart');
-
-	s.opacity = opacityStart;
-	v._subPhase = 1;
-	v._shakeCount = 0;
-	v._shakeWaitCount = 0;
-	v._orgX = s.x;
-	v._orgY = s.y;
-};
-
-MK_TextAnim_Zoom3.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//if (this._subPhase == 1) {
-	//	var startO = this.getParam('opacityStart');
-	//	var   endO = this.getParam('opacityEnd'  );
-	//	var speedO = this.getParam('opacitySpeed');
-	//	var startX = this.getParam('scaleXStart');
-	//	var   endX = this.getParam('scaleXEnd'  );
-	//	var speedX = this.getParam('scaleXSpeed');
-	//	var startY = this.getParam('scaleYStart');
-	//	var   endY = this.getParam('scaleYEnd'  );
-	//	var speedY = this.getParam('scaleYSpeed');
-	//
-	//	var hasChange = false;
-	//
-	//	var   nowO = s.opacity;
-	//	if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-	//		// 在变化范围(startO~endO)内
-	//		s.opacity += speedO;
-	//		hasChange = true;
-	//	}
-	//	var   nowX = s.scale.x;
-	//	if ((startX <= nowX && nowX < endX) || (startX >= nowX && nowX > endX)) {
-	//		// 在变化范围(startO~endO)内
-	//		s.scale.x += speedX;
-	//		hasChange = true;
-	//	}
-	//	else {
-	//		s.scale.x = endX;
-	//	}
-	//	var   nowY = s.scale.y;
-	//	if ((startY <= nowY && nowY < endY) || (startY >= nowY && nowY > endY)) {
-	//		// 在变化范围(startO~endO)内
-	//		s.scale.y += speedY;
-	//		hasChange = true;
-	//	}
-	//	else {
-	//		s.scale.y = endY;
-	//	}
-	//
-	//	if (!hasChange) {
-	//		this._subPhase = 2;
-	//	}
-	//}
-	//
-	//if (this._subPhase == 2) {
-	//	var shakeTotalCount = this.getParam('shakeTotalCount');
-	//	this._shakeCount++;
-	//	this.onPlaying_shake();
-	//	if (this._shakeCount >= shakeTotalCount) { 
-	//		// 还原，也可以放在onStop
-	//		s.x = s._orgX;
-	//		s.y = s._orgY;
-	//		this._subPhase = 3;
-	//	};		 
-	//};
-	//
-	//if (this._subPhase == 3) {
-	//	this.setFlagStopOn();
-	//}
-
-	var startO = this.getParam('opacityStart');
-	var   endO = this.getParam('opacityEnd'  );
-	var speedO = this.getParam('opacitySpeed');
-	var startX = this.getParam('scaleXStart');
-	var   endX = this.getParam('scaleXEnd'  );
-	var speedX = this.getParam('scaleXSpeed');
-	var startY = this.getParam('scaleYStart');
-	var   endY = this.getParam('scaleYEnd'  );
-	var speedY = this.getParam('scaleYSpeed');
-
-	var shakeWaitCount = this.getParam('shakeWaitCount');
-	var shakeAmplitude = this.getParam('shakeAmplitude');
-
-	var shakeNeedStop   = this.getParam('shakeNeedStop');
-	var shakeTotalCount = this.getParam('shakeTotalCount');
-
-	this.getTargets().forEach(function(obj) {
-		if (!obj || !obj.sprite) return ;
-		s = obj.sprite;
-		v = obj.var;
-
-		if (v._subPhase == 1) {
-			var hasChange = false;
-			var   nowO = s.opacity;
-			if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-				// 在变化范围(startO~endO)内
-				s.opacity += speedO;
-				hasChange = true;
-			}
-			var   nowX = s.scale.x;
-			if ((startX <= nowX && nowX < endX) || (startX >= nowX && nowX > endX)) {
-				// 在变化范围(startO~endO)内
-				s.scale.x += speedX;
-				hasChange = true;
-			}
-			else {
-				s.scale.x = endX;
-			}
-			var   nowY = s.scale.y;
-			if ((startY <= nowY && nowY < endY) || (startY >= nowY && nowY > endY)) {
-				// 在变化范围(startO~endO)内
-				s.scale.y += speedY;
-				hasChange = true;
-			}
-			else {
-				s.scale.y = endY;
-			}
-		
-			if (!hasChange) {
-				v._subPhase = 2;
-			}
-		}
-		
-		if (v._subPhase == 2) {
-			v._shakeCount++;
-			//v.onPlaying_shake();
-			//v.playing_shake(obj);
-			this.playing_shake(obj, shakeWaitCount, shakeAmplitude);
-			if (shakeNeedStop > 0 && v._shakeCount >= shakeTotalCount) {
-				s.x = v._orgX;
-				s.y = v._orgY;
-				v._subPhase = 3;
-			};		 
-		};
-	}, this);
-};
-
-//MK_TextAnim_Zoom3.prototype.onPlaying_shake = function() {
-//	this._shakeWaitCount++;
-//	var shakeWaitCount = this.getParam('shakeWaitCount');
-//	if (this._shakeWaitCount < shakeWaitCount) return ;
-//	this._shakeWaitCount = 0;
-//	var s = this.getTarget();
-//	if (!s) return ;
-//	var shakeAmplitude = this.getParam('shakeAmplitude');
-//	var rnd1 = Math.randomInt(2 * shakeAmplitude) - shakeAmplitude;
-//	var rnd2 = Math.randomInt(2 * shakeAmplitude) - shakeAmplitude;
-//	s.x = rnd1 + this._orgX;
-//	s.y = rnd2 + this._orgY;
-//};
-
-// ？不需要循环所有目标，需要指定目标 ...
-// 这里只负责更新震动，不负责判断是否需要或者是否停止震动
-// ？为了效率考虑，也不获取动画参数，而是靠传入 ...
-MK_TextAnim_Zoom3.prototype.playing_shake = function(targetObj, waitCount, amplitude) {
-	var obj = targetObj;
-	if (!obj || !obj.sprite) return ;
-	s = obj.sprite;
-	v = obj.var;
-	v._shakeWaitCount++;
-	if (v._shakeWaitCount >= waitCount) {
-		v._shakeWaitCount = 0;
-		var rnd1 = Math.randomInt(2 * amplitude) - amplitude;
-		var rnd2 = Math.randomInt(2 * amplitude) - amplitude;
-		s.x = rnd1 + v._orgX;
-		s.y = rnd2 + v._orgY;
-	}
-};
-
-// ？TODO : 允许把多个动画拼接 ...
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnim_Wave
-// 文本动画派生类-wave
-
-function MK_TextAnim_Wave() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Wave.prototype = Object.create(MK_TextAnimBase.prototype);
-MK_TextAnim_Wave.prototype.constructor = MK_TextAnim_Wave;
-
-MK_TextAnim_Wave._DEFAULT_ANIM_CODE = 7;
-
-MK_TextAnim_Wave._PARAM_CONFIG = [
-	['scaleSpeed', 	'number', 0.015], // 缩放速度
-	['scaleCount', 	'number',    30], // 缩放帧数(来回共两次)
-	['loopTotal', 	'number',     1], // 总循环次数
-];
-
-MK_TextAnim_Wave.prototype.onInitTarget = function(obj) {
-	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//this._animCount = 0; // s.ani[0]
-	//this._loopCount = 0;
-
-	if (!obj || !obj.sprite) return ;
-	s = obj.sprite;
-	v = obj.var;
-
-	v._animCount = 0; // s.ani[0]
-	v._loopCount = 0;
-};
-
-MK_TextAnim_Wave.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var scaleSpeed = this.getParam('scaleSpeed');
-	//var scaleCount = this.getParam('scaleCount');
-	//var loopTotal  = this.getParam('loopTotal');
-	//
-	//this._animCount++; 
-	//if (this._animCount <= 1 * scaleCount) {
-	//	s.scale.x += scaleSpeed;
-	//}
-	//else if (this._animCount <= 2 * scaleCount) {
-	//	s.scale.x -= scaleSpeed;
-	//}
-	//else {
-	//	//s.scale.x = 1;
-	//	this._animCount = 0;
-	//	this._loopCount++;
-	//};
-	//s.scale.y = s.scale.x;
-	//
-	//if (this._loopCount >= loopTotal) {
-	//	this.setFlagStopOn();
-	//}
-
-	var scaleSpeed = this.getParam('scaleSpeed');
-	var scaleCount = this.getParam('scaleCount');
-	var loopTotal  = this.getParam('loopTotal');
-
-	this.getTargets().forEach(function(obj) {
-		if (!obj || !obj.sprite) return ;
-		s = obj.sprite;
-		v = obj.var;
-		v._animCount++; 
-		if (v._animCount <= 1 * scaleCount) {
-			s.scale.x += scaleSpeed;
-		}
-		else if (v._animCount <= 2 * scaleCount) {
-			s.scale.x -= scaleSpeed;
-		}
-		else {
-			//s.scale.x = 1;
-			v._animCount = 0;
-			v._loopCount++;
-		};
-		s.scale.y = s.scale.x;
-		
-		if (v._loopCount >= loopTotal) {
-			s.scale.x = s.scale.y = 1.00;
-		}
-	}, this);
-};
-
-//MK_TextAnim_Wave.prototype.onStop = function() {
-//	MK_TextAnimBase.prototype.onStop.apply(this, arguments);
-//	var s = this.getTarget();
-//	if (!s) return ;
-//	s.scale.x = s.scale.y = 1.00;
-//};
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnim_Rotation
-// 文本动画派生类-rotation
-
-function MK_TextAnim_Rotation() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Rotation.prototype = Object.create(MK_TextAnimBase.prototype);
-MK_TextAnim_Rotation.prototype.constructor = MK_TextAnim_Rotation;
-
-MK_TextAnim_Rotation._DEFAULT_ANIM_CODE = 8;
-
-MK_TextAnim_Rotation._PARAM_CONFIG = [
-	['xx1', 	'number', 63], 
-	['xx2', 	'number', 120], 
-	['xx3', 	'number', 0.1], 
-]; // TODO
-
-MK_TextAnim_Rotation.prototype.onInitTarget = function(obj) {
-	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//this._animCount = 0;
-
-	if (!obj) return ;
-	s = obj.sprite;
-	v = obj.var;
-
-	v._animCount = 0;
-};
-
-MK_TextAnim_Rotation.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var xx1 = this.getParam('xx1');
-	//var xx2 = this.getParam('xx2');
-	//var xx3 = this.getParam('xx3');
-	//
-	//this._animCount++;
-	//if (this._animCount <= xx1) {
-	//	s.rotation += xx3;
-	//}
-	//else if (this._animCount <= xx2) {
-	//	s.rotation = 0;
-	//}
-	//else {
-	//	s.rotation = 0;
-	//	this._animCount = 0;
-	//};
-
-	var xx1 = this.getParam('xx1');
-	var xx2 = this.getParam('xx2');
-	var xx3 = this.getParam('xx3');
-
-	this.getTargets().forEach(function(obj) {
-		if (!obj || !obj.sprite) return ;
-		s = obj.sprite;
-		v = obj.var;
-
-		v._animCount++;
-		if (v._animCount <= xx1) {
-			s.rotation += xx3;
-		}
-		else if (v._animCount <= xx2) {
-			s.rotation = 0;
-		}
-		else {
-			s.rotation = 0;
-			v._animCount = 0;
-		};
-	}, this);
-
-    // TODO : 总播放帧
-    // ？？改 总播放帧为循环次数 ...
-
-};
-
-//MK_TextAnim_Rotation.prototype.onStop = function() {
-//	MK_TextAnimBase.prototype.onStop.apply(this, arguments);
-//	var s = this.getTarget();
-//	if (!s) return ;
-//	//s.rotation = 0;
-//};
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnim_Swing
-// 文本动画派生类-swing
-
-function MK_TextAnim_Swing() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Swing.prototype = Object.create(MK_TextAnimBase.prototype);
-MK_TextAnim_Swing.prototype.constructor = MK_TextAnim_Swing;
-
-MK_TextAnim_Swing._DEFAULT_ANIM_CODE = 9;
-
-MK_TextAnim_Swing._PARAM_CONFIG = [
-	['rotateSpeed', 	'number', 0.02], // 旋转速度 (角度/帧)
-	['rotateInitDir', 	'string',  'R'], // 初始旋转方向(L:逆时针,R:顺时针,其他:'L')
-	['angleInit', 		'number',    0], // 初始角度
-	['angleRangeL', 	'number', -0.4], // 角度左范围
-	['angleRangeR', 	'number',  0.4], // 角度右范围
-];
-
-MK_TextAnim_Swing.prototype.onInitTarget = function(obj) {
-	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var rotateInitDir = this.getParam('rotateInitDir');
-	//var angleInit     = this.getParam('angleInit');
-	//
-	//this._rotateR = (rotateInitDir == 'R');
-	//s.rotation = angleInit;
-
-	if (!obj || !obj.sprite) return ;
-	s = obj.sprite;
-	v = obj.var;
-
-	var rotateInitDir = this.getParam('rotateInitDir');
-	var angleInit     = this.getParam('angleInit');
-
-	v._rotateR = (rotateInitDir == 'R');
-	s.rotation = angleInit;
-};
-
-MK_TextAnim_Swing.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var rotateSpeed = this.getParam('rotateSpeed');
-	//var angleRangeL = this.getParam('angleRangeL');
-	//var angleRangeR = this.getParam('angleRangeR');
-	//
-	//if (this._rotateR) {
-	//	s.rotation += rotateSpeed;
-	//	if (s.rotation > angleRangeR) { 
-	//	    s.rotation = angleRangeR;
-	//        this._rotateR = false;
-	//	};
-	//} else {
-	//	s.rotation -= rotateSpeed;
-	//	if (s.rotation < angleRangeL) { 
-	//	    s.rotation = angleRangeL;
-	//        this._rotateR = true;
-	//	};
-	//};
-
-	var rotateSpeed = this.getParam('rotateSpeed');
-	var angleRangeL = this.getParam('angleRangeL');
-	var angleRangeR = this.getParam('angleRangeR');
-
-	this.getTargets().forEach(function(obj) {
-		if (!obj || !obj.sprite) return ;
-		s = obj.sprite;
-		v = obj.var;
-		if (v._rotateR) {
-			s.rotation += rotateSpeed;
-			if (s.rotation > angleRangeR) { 
-			    s.rotation = angleRangeR;
-		       v._rotateR = false;
-			};
-		} else {
-			s.rotation -= rotateSpeed;
-			if (s.rotation < angleRangeL) { 
-			    s.rotation = angleRangeL;
-		       v._rotateR = true;
-			};
-		};
-
-    	// s.rotation = 0;
-
-	}, this);
-
-    // TODO : 总播放帧
-};
-
-//MK_TextAnim_Swing.prototype.onStop = function() {
-//	MK_TextAnimBase.prototype.onStop.apply(this, arguments);
-//	var s = this.getTarget();
-//	if (!s) return ;
-//	s.rotation = 0;
-//};
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnim_Random
-// 文本动画派生类-random
-
-function MK_TextAnim_Random() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Random.prototype = Object.create(MK_TextAnimBase.prototype);
-MK_TextAnim_Random.prototype.constructor = MK_TextAnim_Random;
-
-MK_TextAnim_Random._DEFAULT_ANIM_CODE = 10;
-
-MK_TextAnim_Random._PARAM_CONFIG = [
-	['opacityStart', 	'number', 0],
-	['opacityEnd', 		'number', 255],
-	['opacitySpeed', 	'number', 4],
-	['scaleRangeMin', 	'number', 0.7], 
-	['scaleRangeMax', 	'number', 1.4], 
-	['rotateRange', 	'number', 0.4], 
-	['rotateDir', 		'string', 'R'], // 旋转方向(L:逆时针,R:顺时针,其他:'L')
-];
-
-MK_TextAnim_Random.prototype.onInitTarget = function(obj) {
-	MK_TextAnimBase.prototype.onInitTarget.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var scaleRangeMin = this.getParam('scaleRangeMin');
-	//var scaleRangeMax = this.getParam('scaleRangeMax');
-	//var scaleRadomSize = scaleRangeMax - scaleRangeMin;
-	//
-	//var rotateRange = this.getParam('rotateRange');
-	//var rotateDir = this.getParam('rotateDir');
-	//
-	//s.opacity = 0;
-	//s.scale.x = s.scale.y = Math.random() * scaleRadomSize + scaleRangeMin;
-	//s.rotation = (Math.random() * rotateRange) * (rotateDir == 'R' ? 1: -1);
-
-	if (!obj || !obj.sprite) return ;
-	s = obj.sprite;
-	v = obj.var;
-
-	var scaleRangeMin = this.getParam('scaleRangeMin');
-	var scaleRangeMax = this.getParam('scaleRangeMax');
-	var scaleRadomSize = scaleRangeMax - scaleRangeMin;
-
-	var rotateRange = this.getParam('rotateRange');
-	var rotateDir = this.getParam('rotateDir');
-	
-	s.opacity = 0;
-	s.scale.x = s.scale.y = Math.random() * scaleRadomSize + scaleRangeMin;
-	s.rotation = (Math.random() * rotateRange) * (rotateDir == 'R' ? 1: -1);
-};
-
-MK_TextAnim_Random.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-	//var s = this.getTarget();
-	//if (!s) return ;
-	//
-	//var startO = this.getParam('opacityStart');
-	//var   endO = this.getParam('opacityEnd');
-	//var speedO = this.getParam('opacitySpeed');
-	//
-	//var hasChange = false;
-	//
-	//var   nowO = s.opacity;
-	//if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-	//	// 在变化范围(startO~endO)内
-	//	s.opacity += speedO;
-	//	hasChange = true;
-	//}
-	//
-	//if (!hasChange) {
-	//	this.setFlagStopOn();
-	//}
-	
-	var startO = this.getParam('opacityStart');
-	var   endO = this.getParam('opacityEnd');
-	var speedO = this.getParam('opacitySpeed');
-
-	this.getTargets().forEach(function(obj) {
-		if (!obj || !obj.sprite) return ;
-		s = obj.sprite;
-		v = obj.var;
-		var nowO = s.opacity;
-		if ((startO <= nowO && nowO < endO) || (startO >= nowO && nowO > endO)) {
-			// 在变化范围(startO~endO)内
-			s.opacity += speedO;
-		}
-	}, this);
-
-	// TODO : 总播放帧
-};
-
-
-// FINISH : 改成对所有目标有效
-
-
-
-
-
-// ----------------------------------------------------------------
-// MK_TextAnim_Karaoke
-// 文本动画派生类-karaoke
-
-// FINISH : 把 KTV 改名为 Karaoke
-
-function MK_TextAnim_Karaoke() {
-    this.initialize.apply(this, arguments);
-};
-
-MK_TextAnim_Karaoke.prototype = Object.create(MK_TextAnimBase.prototype);
-MK_TextAnim_Karaoke.prototype.constructor = MK_TextAnim_Karaoke;
-
-MK_TextAnim_Karaoke._DEFAULT_ANIM_CODE = 11;
-
-MK_TextAnim_Karaoke._PARAM_CONFIG = [
-	['playSpeed', 	'number', 2], // 播放速度(像素/帧)
-	['lineWidth', 	'number', 4], 
-	['uLineColor', 	'string', '#FFFFFF'], 
-	['uTextColor', 	'string', '#000000'], 
-	['dLineColor', 	'string', '#000000'], 
-	['dTextColor', 	'string', '#FFFFFF'], 
-];
-
-
-
-/*
-MK_TextAnim_Karaoke.prototype.initialize = function(code, msgWindow) {
-	MK_TextAnimBase.prototype.initialize.apply(this, arguments);
-
-	// 指定窗口
-	// 为了 使用窗口的context的bitmap的配置
-	// 为了 获取消息窗口的文本
-	this._msgWindow = msgWindow || null;
-
-	// 精灵分组
-	//this._spriteGourp = [];
-};
-*/
-// msgWindow部分移至MK_TextAnimBase
-
-
-
-/*
-// --------------------------------
-// 精灵分组
-
-// ？设置分组，然后以组为单位提出到目标列表 ...
-// ？TODO : 这个功能是否可以写进基类 ...
-
-MK_TextAnim_Karaoke.prototype.setSpriteGroup = function(groupIndex, sprites) {
-	this._spriteGourp[groupIndex] = sprites;
-};
-MK_TextAnim_Karaoke.prototype.useSpriteGroup = function(groupIndex) {
-	this.setTargets(this._spriteGourp[groupIndex]);
-};
-MK_TextAnim_Karaoke.prototype.getSpriteGroups = function() {
-	return this._spriteGourp;
-};
-
-MK_TextAnim_Karaoke.prototype.addTargetToGroup = function(groupIndex, sprite) {
-	if (!this._spriteGourp[groupIndex]) {
-		this._spriteGourp[groupIndex] = [];
-	}
-	this._spriteGourp[groupIndex].push(sprite);
-};
-
-// ？改成 用分组对目标的所有精灵标记，标记播放的行号 ...
-
-
-MK_TextAnim_Karaoke.prototype.addTargetToGroupByText = function(groupIndex, textState) {
-	
-};
-*/
-// ？暂时抛弃这个功能 ...
-// ？直接用多个实例即可实现多行播放，而不需要在一个实例中处理 ...
-
-
-
-// --------------------------------
-// 当添加精灵
-
-/*
-MK_TextAnim_Karaoke.prototype.addTargetByMsgWindow = function() {
-	if (!this._msgWindow) return ;
-	var context = this._msgWindow.contents;
-	var textState = this._msgWindow._textState;
-	var text = textState.text[textState.index - 1];
-*/
-// ？动画类里不负责获取文本等逻辑，这部分逻辑由MK_TextBitmap完成 ...
-// ？动画类里只负责 对获取到的文本和生成好的精灵进行处理 ...
-
-//MK_TextAnim_Karaoke.prototype.onAddTarget = function(targetObj, textStatus, contents) {
-//	MK_TextAnimBase.prototype.onAddTarget.apply(this, arguments);
-//	textStatus = textStatus || this.getMsgTextStatus;
-//	contents   = contents   || this.getMsgContents;
-//	if (!textStatus || !contents) return ;
-//	var text = textState.text[textState.index - 1];
-//	this.initKtvSprite(targetObj, text, contents);
-//};
-
-MK_TextAnim_Karaoke.prototype.onInitTarget = function(targetObj, textStatus, contents) {
-	MK_TextAnimBase.prototype.onAddTarget.apply(this, arguments);
-	textStatus = textStatus || this.getMsgTextStatus;
-	contents   = contents   || this.getMsgContents;
-	var text = textState.text[textState.index - 1];
-	this.initKtvSprite(targetObj, text, msgBitmap);
-};
-
-MK_TextAnim_Karaoke.prototype.initKtvSprite = function(targetObj, text, msgBitmap) {
-
-	var dLineColor = this.getParam('dLineColor');
-	var lineWidth  = this.getParam('lineWidth');
-	var dTextColor = this.getParam('dTextColor');
-	var uLineColor = this.getParam('uLineColor');
-	var uTextColor = this.getParam('uTextColor');
-
-	// 记录
-	var oldBitmap = msgBitmap; // this._msgWindow.contents
-	var old_canvas = oldBitmap._canvas;
-	var old_context = oldBitmap._context;
-	var old_outlineColor = oldBitmap.outlineColor;
-	var old_lineWidth = oldBitmap.lineWidth;
-	var old_textColor = oldBitmap.textColor;
-	!!oldBitmap.textModeOff && oldBitmap.textModeOff(); // MK_TextBitmap
-
-	// ？可以直接用 MK_TextBitmap 创建sprite ...
-
-	// 下层(down)
-	var bitmap1 = new Bitmap(sprite.width, sprite.height);
-	var sprite1 = new Sprite(bitmap1);
-	oldBitmap._canvas = bitmap1._canvas;
-	oldBitmap._context = bitmap1._context;
-	oldBitmap.outlineColor = dLineColor;
-	oldBitmap.lineWidth = lineWidth;
-	oldBitmap.textColor = dTextColor;
-	oldBitmap.drawText(text, 0, 0, sprite.width, sprite.height);
-
-	// 上层(up)
-	var bitmap2 = new Bitmap(sprite.width, sprite.height);
-	var sprite2 = new Sprite(bitmap2);
-	oldBitmap._canvas = bitmap2._canvas;
-	oldBitmap._context = bitmap2._context;
-	oldBitmap.outlineColor = uLineColor;
-	oldBitmap.lineWidth = lineWidth;
-	oldBitmap.textColor = uTextColor;
-	oldBitmap.drawText(text, 0, 0, sprite.width, sprite.height);
-	sprite2.setFrame(0, 0, 0, 0);
-
-	// 还原
-	oldBitmap._canvas      = old_canvas;
-	oldBitmap._context     = old_context;
-	oldBitmap.outlineColor = old_outlineColor;
-	oldBitmap.lineWidth    = old_lineWidth;
-	oldBitmap.textColor    = old_textColor;
-	!!oldBitmap.textModeOn && oldBitmap.textModeOn(); // MK_TextBitmap
-
-	// 消除s.bitmap的图案
-	s.setFrame(0, 0, 0, 0);
-
-	v._karaokeSprite1 = sprite1;
-	v._karaokeSprite2 = sprite2;
-	s.addChild(sprite1);
-	s.addChild(sprite2);
-};
-
-
-
-MK_TextAnim_Karaoke.prototype.onCreate = function() {
-	MK_TextAnimBase.prototype.onCreate.apply(this, arguments);
-
-	// TODO : create 里分组，
-
-	var sprites = this.getTargets();
-
-	this._endPosX = sprites
-	.map(function(s) { return s.x; }, this)
-	.filter(function(x) { return !Number.isNaN(x); }, this)
-	.concat(0) // default value (min value)
-	.reduce(function(xa, xb) { return xa > xb ? xa : xb; }, this); // max
-
-	this._startPosX = sprites
-	.map(function(s) { return s.x; }, this)
-	.filter(function(x) { return !Number.isNaN(x); }, this)
-	.concat(this._endPosX) // default value (max value)
-	.reduce(function(xa, xb) { return xa < xb ? xa : xb; }, this); // min
-
-	//this._playWidth = 0;
-	//this._totalWidth = this._endPosX - this._startPosX;
-
-	this._playPosX = this._startPosX;
-
-	// 播放速度(像素/帧)，可以改变成员变量以改变播放速度
-	// ？区别于用户主动设置的速度，主动设置的修改动画参数 ...
-	// ？这个速度可能是动画类自己进行的修改，所以是成员变量，而不是动画参数 ...
-	this._playSpeed = this.getParam('playSpeed');
-
-	// === break ===
-
-}; // TODO
-
-MK_TextAnim_Karaoke.prototype.onPlaying = function() {
-	MK_TextAnimBase.prototype.onPlaying.apply(this, arguments);
-
-	var sprites = this.getTargets();
-
-	if (!(this._karaokeWidth >= 0)) {
-		this._karaokeWidth = 0;
-	}
-	
-	var totalWidth = 0;
-	var animSpeed = this.getParam('animSpeed');
-
-	this._karaokeWidth += animSpeed;
-	this._letters.forEach(function(s) {
-		if (s._needAnim) {
-			// 暂时 s 只有一种动画  TODO : ...
-	
-			s._karaokeTime = totalWidth;
-			s._karaokeWidth = this._karaokeWidth;
-			//s._karaokeSpeed = animSpeed; // 不再需要计算总完成
-
-			totalWidth += s.bitmap.width;
-		}
-	}, this);
-
-
-	// === break ===
-
-
-	var s = this.getTarget();
-	if (!s) return ;
-
-}; // TODO
-
-MK_TextAnim_Karaoke.prototype.onStop = function() {
-	MK_TextAnimBase.prototype.onStop.apply(this, arguments);
-	var s = this.getTarget();
-	if (!s) return ;
-}; // TODO
-
-/*
-MK_TextSprite.prototype.updateLetter_karaoke = function() {
-	if (s._karaokeTime <= s._karaokeWidth) {
-		var t = s._karaokeWidth - s._karaokeTime;
-    	var w = t > s._karaokeSprite2.bitmap.width ? s._karaokeSprite2.bitmap.width : t;
-    	var h = s._karaokeSprite2.bitmap.height;
-    	s._karaokeSprite2.setFrame(0, 0, w, h);
-	}
-};
-*/
-
-
-
-
-// ----------------------------------------------------------------
-// 配置管理器
-
-// 告诉管理器每个code对应的类
-
-(function () {
-	var list = [
-		// empty
-		MK_TextAnimBase, 		// 0 empty
-
-		// MOG_AnimterdText
-		MK_TextAnim_Fade, 		// 1 fade
-		MK_TextAnim_Zoom, 		// 2 zoom
-		MK_TextAnim_Zoom2, 		// 3 zoom2
-		//MK_TextAnim_Wipe, 	// 4 wipe
-		null, // tmp
-		MK_TextAnim_Shake, 		// 5 shake
-		MK_TextAnim_Zoom3, 		// 6 zoom3
-		MK_TextAnim_Wave, 		// 7 wave
-		MK_TextAnim_Rotation, 	// 8 rotation
-		MK_TextAnim_Swing, 		// 9 swing
-		MK_TextAnim_Random, 	// 10 random
-
-		// added
-		//MK_TextAnim_Karaoke, 	// 11 karaoke
-	];
-	list.forEach(function(animClass, idx) {
-		!!animClass && MK_SpriteAnimManager.setAnimClass(idx, animClass);
-	});
-})();
-
-// TODO : 增加 通过key找到动画类
-
-
-
-
-
-// ----------------------------------------------------------------
 // 写入动画参数
 
 (function() {
 
 	var pluginName = 'MKP_SpriteAnimManager';
-	var param      = MK_Data.param[pluginName];
+	var param = MK_Plugins.param[pluginName];
 
 	param['animParamsConfig'].forEach(function(animParams) {
 		MK_SpriteAnimManager.setUserMapping(animParams.animCode, animParams.baseAnimCode);
@@ -2960,6 +890,376 @@ MK_TextSprite.prototype.updateLetter_karaoke = function() {
 			}
 		});
 	});
+
+})();
+
+
+
+
+// ----------------------------------------------------------------
+// 修改 Window_Message
+
+// ？TODO : 分离出 SpriteAnimationForMessageWindow ...
+
+(function() {
+
+// --------------------------------
+// 初始化
+
+const _MK_Window_Message__createAllParts = Window_Message.prototype._createAllParts;
+Window_Message.prototype._createAllParts = function() {
+	_MK_Window_Message__createAllParts.apply(this, arguments);
+	this._infoTextSprite = new MK_TextSprite();
+	this._windowContentsSprite.addChildAt(this._infoTextSprite, 0);
+};
+
+const _MK_Window_Message_createContents = Window_Message.prototype.createContents;
+Window_Message.prototype.createContents = function() {
+	_MK_Window_Message_createContents.apply(this, arguments);
+
+	var textBitmap = new MK_TextBitmap(this.contentsWidth(), this.contentsHeight());
+	textBitmap.setTextSprite(this._infoTextSprite);
+	textBitmap.textModeOn();
+	//textBitmap.textModeOff(); // ？默认关闭
+	this.contents = textBitmap;
+
+	this.resetFontSettings();
+
+	// 改变了 this.contents.drawText
+};
+
+// TODO : 添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
+
+
+// --------------------------------
+// update
+
+const _MK_Window_Message_update = Window_Message.prototype.update;
+Window_Message.prototype.update = function() {
+	_MK_Window_Message_update.apply(this, arguments);
+	//MK_SpriteAnimManager.updateSpriteAnimtions();
+	MK_SpriteAnimManager.updateSpriteAnimtions(this._infoTextSprite);
+	// TODO : windowMessage 的 textsprite 进行更新 且只更新自己的动画对象 ...
+};
+
+// ？TODO : 面向对象 ...
+
+
+// --------------------------------
+// 开始和结束消息
+
+const _MK_Window_Message_startMessage = Window_Message.prototype.startMessage;
+Window_Message.prototype.startMessage = function() {
+	// 暂时
+	//this._infoTextSprite.init();
+	//this._infoTextSprite.clearAll();
+
+	// ？开始时也要清除一次 ...
+	// ？因为连续显示消息 不会关闭消息窗口 ...
+	this.textAnim_clearTextSprite(); // TODO : 是否有必要
+	//this._infoTextSprite.clearAll();
+
+	// 把 messageWindow 的 textState 给他
+	this._infoTextSprite.setMsgWindow(this);
+
+	_MK_Window_Message_startMessage.apply(this, arguments);
+};
+
+/*
+const _MK_Window_Message_newPage = Window_Message.prototype.newPage;
+Window_Message.prototype.newPage = function(textState) {
+	// ？newPage 时 会执行 this.contents.clear() ...
+	// ？this.contents 是 TextBitmap 在 clear 时 清空 TextSprite 的 letter ...
+	// ？此时还要 清空 SpriteAnim 的 target ...
+	// TODO : TextSprite 是否需要 耦合 SpriteAnim 的 initTargets ...
+
+	//this.textAnim_clearTextSprite();
+
+	_MK_Window_Message_newPage.apply(this, arguments);
+};
+*/
+// ？不需要 ...
+// ？startMessage 时 会清除 TextSprite 同时也清除了 SpriteAnim ...
+// ？所以之后必须要 再次创建 SpriteAnim ...
+
+// 关闭时清除 TextSprite
+/*
+const _MK_Window_Message_updateClose = Window_Message.prototype.updateClose;
+Window_Message.prototype.updateClose = function() {
+	var noColsed = !this.isClosed();
+	_MK_Window_Message_updateClose.apply(this, arguments);
+	if (noColsed && this.isClosed()) {
+		// 之前未完全关闭 现在完全关闭了
+		//MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
+		//this._infoTextSprite.clearAll();
+		////MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
+		//// ？要先清除 文本动画对象 在清除 文本精灵的标记 ...
+		//// TODO : 清除方法 交给 this._infoTextSprite 执行
+		this.textAnim_clearTextSprite();
+	}
+};
+*/
+// ？Window_Message对象 有 terminateMessage 方法 ...
+
+const _MK_Window_Message_terminateMessage = Window_Message.prototype.terminateMessage;
+Window_Message.prototype.terminateMessage = function() {
+	_MK_Window_Message_terminateMessage.apply(this, arguments);
+	this.textAnim_clearTextSprite();
+};
+
+Window_Message.prototype.textAnim_clearTextSprite = function() {
+	MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
+	this._infoTextSprite.clearAll();
+	//MK_SpriteAnimManager.clearSpriteAnimObjectByTextSprite(this._infoTextSprite);
+	// ？要先清除 文本动画对象 在清除 文本精灵的标记 ...
+	// TODO : 清除方法 交给 this._infoTextSprite 执行
+
+	// TODO : onDestroy
+};
+
+
+// --------------------------------
+// 更详细的 textState
+
+const _MK_Window_Message_newPage = Window_Message.prototype.newPage;
+Window_Message.prototype.newPage = function(textState) {
+	_MK_Window_Message_newPage.apply(this, arguments);
+	textState.pageNum = (textState.pageNum || 0) + 1;
+	textState.lineNum = 1;
+	textState.textNum = 1;
+};
+
+const _MK_Window_Message_processNewPage = Window_Message.prototype.processNewPage;
+Window_Message.prototype.processNewPage = function(textState) {
+	_MK_Window_Message_processNewPage.apply(this, arguments);
+	textState.pageNum++;
+	textState.lineNum = 1;
+	textState.textNum = 1;
+};
+
+const _MK_Window_Message_processNewLine = Window_Message.prototype.processNewLine;
+Window_Message.prototype.processNewLine = function(textState) {
+	_MK_Window_Message_processNewLine.apply(this, arguments);
+	textState.lineNum++;
+	textState.textNum = 1;
+};
+
+const _MK_Window_Message_processNormalCharacter = Window_Message.prototype.processNormalCharacter;
+Window_Message.prototype.processNormalCharacter = function(textState) {
+	_MK_Window_Message_processNormalCharacter.apply(this, arguments);
+	textState.textNum++;
+};
+
+const _MK_Window_Message_processDrawIcon = Window_Message.prototype.processDrawIcon;
+Window_Message.prototype.processDrawIcon = function(iconIndex, textState) {
+	_MK_Window_Message_processDrawIcon.apply(this, arguments);
+	textState.textNum++;
+};
+
+
+// --------------------------------
+// 控制字符
+
+const _MK_Window_Message_processEscapeCharacter = Window_Message.prototype.processEscapeCharacter;
+Window_Message.prototype.processEscapeCharacter = function(code, textState) {
+	switch (code) {
+
+	// 消息中的obtainEscapeCode获取到的字母是大写字母，且是纯字母
+
+	case 'TEXTANIM': // create text anim
+		var param = this.obtainEscapeParam(textState);
+		/*
+		var code = param || 0;
+		//this._infoTextSprite.addTextAnimByCode(code);
+		var spriteAnim = MK_SpriteAnimManager.addSpriteAnimObject(code);
+		MK_SpriteAnimManager.initSpriteAnimTarget(spriteAnim, code, this._infoTextSprite);
+		// TODO : 可以从 spriteAnim 获取 code
+		this.textAnim_setFlagAllowAddOn(code); // 默认开启
+		this.textAnim_setAnimFlagOn(code);
+		*/
+		this.textAnim_createTextAnim(param || 0);
+		break;
+
+	case 'TAPLAY': // text anim play
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagPlayOn(param || 0);
+		this.textAnim_setFlagPlayOn(param || 0);
+		break;
+	case 'TAPAUSE': // text anim pause
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagPauseOn(param || 0);
+		this.textAnim_setFlagPauseOn(param || 0);
+		break;
+	case 'TACONT': // text anim continue
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagContinueOn(param || 0);
+		this.textAnim_setFlagContinueOn(param || 0);
+		break;
+	case 'TASTOP': // text anim stop
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagStopOn(param || 0);
+		this.textAnim_setFlagStopOn(param || 0);
+		break;
+
+	case 'TAADDON': // text anim add(allow add) on
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagAllowAddOn(param || 0);
+		this.textAnim_setFlagAllowAddOn(param || 0);
+		break;
+	case 'TAADDOFF': // text anim add(allow add) off
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagAllowAddOff(param || 0);
+		this.textAnim_setFlagAllowAddOff(param || 0);
+		break;
+
+	case 'TAACTON': // text anim active(enabled) on
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagEnabledOn(param || 0);
+		this.textAnim_setFlagEnabledOn(param || 0);
+		break;
+	case 'TAACTOFF': // text anim active(enabled) off
+		var param = this.obtainEscapeParam(textState);
+		//this._infoTextSprite.setFlagEnabledOff(param || 0);
+		this.textAnim_setFlagEnabledOff(param || 0);
+		break;
+	// 未使用
+
+	// TODO : 在消息窗口中设置动画参数
+	// ？调用多次 obtainEscapeParam 可以从 \XXX[12][34] 中获取多个纯数值参数 ...
+	// ？以此 可以指定 anim code 和 param index 但不方便指定参数值 ..
+	// ？可以提前在用户参数的其他闲置的索引位设置值，再在消息中把某个索引位的参数复制到另一位位置 ...
+	// ？即 使用 \XX[1][2][3] 把animcode=1的参数2设置为参数3的值 ...
+
+
+	//case 'RCV': case 'REC': // recover
+	//	var param = this.obtainEscapeParam(textState);
+	//	// ？是否有必要 ...
+	//	// ？缺省时找不到[..]，不会修改textState.index ...
+	//	this._infoTextSprite.recoverAllLetter();
+	//	break;
+
+	/*
+	case 'MVX': // moveY / offsetX
+		var param = this.obtainEscapeParam(textState);
+		// TODO : ...
+		break;
+
+	case 'MVY': // moveY / offsetY
+		var param = this.obtainEscapeParam(textState);
+		// TODO : ...
+		break;
+	*/
+
+	default:
+		_MK_Window_Message_processEscapeCharacter.apply(this, arguments);
+		break;
+	}
+
+	// TODO : 全部动画效果复原
+};
+
+
+Window_Message.prototype.textAnim_createTextAnim = function(code) {
+	//this._infoTextSprite.addTextAnimByCode(code);
+	var spriteAnim = MK_SpriteAnimManager.addSpriteAnimObject(code);
+	//MK_SpriteAnimManager.initSpriteAnimTarget(spriteAnim, code, this._infoTextSprite);
+	// ？可以从 spriteAnim 获取 code ...
+	MK_SpriteAnimManager.initSpriteAnimTarget(spriteAnim, this._infoTextSprite);
+	this.textAnim_setFlagAllowAddOn(code); // 默认开启
+	this.textAnim_setAnimFlagOn(code);
+};
+
+/*
+//MK_SpriteAnimManager.prototype.textAnim_setFlagAutoOn = function(code) {
+//	//this.setTextSpriteFlag('auto' + '_' + code, true);
+//	this.setTextSpriteAnimFlag('auto', code, true);
+//};
+//MK_SpriteAnimManager.prototype.setFlagAutoOff = function(code) {
+//	//this.setTextSpriteFlag('auto' + '_' + code, false);
+//	this.setTextSpriteAnimFlag('auto', code, false);
+//};
+Window_Message.prototype.textAnim_setFlagAutoOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('auto', code, true);
+};
+Window_Message.prototype.textAnim_setFlagAutoOff = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('auto', code, false);
+};
+
+Window_Message.prototype.textAnim_setFlagPlayOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('play', code, true);
+};
+Window_Message.prototype.textAnim_setFlagPauseOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('pause', code, true);
+};
+Window_Message.prototype.textAnim_setFlagContinueOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('continue', code, true);
+};
+Window_Message.prototype.textAnim_setFlagStopOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('stop', code, true);
+};
+
+Window_Message.prototype.textAnim_setFlagInitOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('init', code, true);
+};
+//Window_Message.prototype.textAnim_setFlagInitOff = function(code) {
+//	this._infoTextSprite.setTextSpriteAnimFlag('init', code, false);
+//};
+
+Window_Message.prototype.textAnim_setFlagEnabledOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('enabled', code, true);
+};
+Window_Message.prototype.textAnim_setFlagEnabledOff = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('enabled', code, false);
+};
+*/
+
+Window_Message.prototype.textAnim_setFlagAutoOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('auto', code, true);
+};
+Window_Message.prototype.textAnim_setFlagAutoOff = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('auto', code, false);
+};
+// ？未使用
+
+Window_Message.prototype.textAnim_setFlagPlayOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('play', code, true);
+};
+Window_Message.prototype.textAnim_setFlagPauseOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('pause', code, true);
+};
+Window_Message.prototype.textAnim_setFlagContinueOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('continue', code, true);
+};
+Window_Message.prototype.textAnim_setFlagStopOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('stop', code, true);
+};
+Window_Message.prototype.textAnim_setFlagInitOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('init', code, true);
+};
+
+Window_Message.prototype.textAnim_setFlagEnabledOn = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('enabled', code, true);
+};
+Window_Message.prototype.textAnim_setFlagEnabledOff = function(code) {
+	MK_SpriteAnimManager.setSpriteAnimFlag('enabled', code, false);
+};
+// ？未使用
+
+Window_Message.prototype.textAnim_setAnimFlagOn = function(code) {
+	this._infoTextSprite.setTextSpriteAnimFlag('anim', code, true);
+};
+//Window_Message.prototype.textAnim_setAnimFlagOff = function(code) {
+//	this._infoTextSprite.setTextSpriteAnimFlag('anim', code, false);
+//};
+// ？不建议 取消标记 anim ...
+// ？防止创建 anim 后 无法及时清除 ...
+
+Window_Message.prototype.textAnim_setFlagAllowAddOn = function(code) {
+	this._infoTextSprite.setNewLetterAnimFlag('add', code, true);
+};
+Window_Message.prototype.textAnim_setFlagAllowAddOff = function(code) {
+	this._infoTextSprite.setNewLetterAnimFlag('add', code, false);
+};
 
 })();
 

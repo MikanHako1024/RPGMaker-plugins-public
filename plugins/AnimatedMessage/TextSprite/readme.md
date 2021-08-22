@@ -1,9 +1,14 @@
 # TextSprite <文本精灵>
 
-本插件`MKP_TextSprite`用来播放动画  
-设置动画和动画参数由另一个插件[MKP_SpriteAnimManager](./../SpriteAnimManager)负责  
+完成精灵动画功能的三个插件之一  
++ 插件[`TextSprite`](./../TextSprite)(本插件)
+  - 用于支持绘制和控制播放动画等
++ 插件[`SpriteAnimationSet`](./../SpriteAnimationSet)
+  - 用于提供处理动画效果等
++ 插件[`SpriteAnimManager`](./../SpriteAnimManager)
+  - 用于设置动画和动画参数、处理消息框文字播放动画等
 
-首先对动画进行配置，详细操作见 插件[MKP_SpriteAnimManager](./../SpriteAnimManager)  
+首先对动画进行配置，详细操作见 插件【MKP_SpriteAnimManager】  
 之后在编辑消息时，使用特殊字串触发一些播放动画的操作，
 如：创建动画、播放动画、暂停动画 等  
 详见 【使用方法】  
@@ -11,7 +16,12 @@
 
 ## 使用方法
 
-在【显示文本】之前，需要设置动画，详见 插件[MKP_SpriteAnimManager](./../SpriteAnimManager)  
+按顺序导入 完成精灵动画功能的三个插件  
++ [`TextSprite`](./../TextSprite)
++ [`SpriteAnimationSet`](./../SpriteAnimationSet)
++ [`SpriteAnimManager`](./../SpriteAnimManager)
+
+在【显示文本】之前，需要设置动画，详见 插件【SpriteAnimManager】  
 之后在【显示文本】里编辑消息时，使用控制字符触发操作，详见 【控制字符】  
 
 
@@ -93,21 +103,22 @@ TAADDOFF : text animtion add off
 
 ## 其他说明
 
-#### 动画列表，详细说明和参数见插件`MKP_SpriteAnimManager`
+#### 动画列表，详细说明和参数见插件`SpriteAnimManager`
 注 : id 为 默认动画id  
 | id | 动画效果 |
 | :- | :------- |
-|  1 | 淡入淡出 |
-|  2 | 缩放     |
-|  3 | 翻转     |
-|  4 | 上下出现(未完成) |
-|  5 | 震动     |
-|  6 | 剧烈缩放 |
-|  7 | 波浪缩放 |
-|  8 | 旋涡     |
-|  9 | 摇晃     |
-| 10 | 随机     |
-| 11 | 卡拉OK   |
+|  2 | 淡入淡出 |
+|  3 | 缩放     |
+|  4 | 翻转     |
+|  5 | 上下出现(未完成) |
+|  6 | 震动     |
+|  7 | 剧烈缩放 |
+|  8 | 波浪缩放 |
+|  9 | 旋涡     |
+| 10 | 摇晃     |
+| 11 | 随机     |
+| 32 | 卡拉Ok   |
+| 52 | 文字居中 |
 
 
 ## 使用示例
@@ -125,10 +136,13 @@ TAADDOFF : text animtion add off
 
 ## 后续任务
 
-- [ ] 添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
-- [ ] 消息窗口关闭时，停止(?或销毁)动画实例
-- [ ] 绘画文字时，考虑文字阴影，增加宽度
-- [ ] 可以创建任意数量带id的无窗口的文本，显示时指定id，用id管理控制或关闭
+- [ ] ?添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
+- [ ] ?消息窗口关闭时，停止(?或销毁)动画实例
+- [x] 绘画文字时，考虑文字阴影，增加宽度
+- [ ] ?可以创建任意数量带id的无窗口的文本，显示时指定id，用id管理控制或关闭
+- [x] 更新插件说明
+- [ ] 默认关闭特殊绘制模式，需要时再打开
+- [ ] 优化创建字母精灵，缓存一些sprite和bitmap，防止创建太多
 
 
 ## Author
