@@ -237,7 +237,7 @@ function (pluginName) {
 
 (function() {
 
-	var pluginName = 'MK_SceneDistort';
+	var pluginName = 'MKP_SceneDistort';
 	MK_Plugins.paramGet[pluginName] = MK_Plugins.getPluginParam(pluginName);
 	MK_Plugins.param[pluginName] = {};
 
