@@ -14,7 +14,8 @@ public plugins for RPGMakerMV / MZ
 | [CorrectGameTime](plugins/CorrectGameTime) | 修正游戏时间 | √ | √ |
 | [PictureWithinMap](plugins/PictureWithinMap) | 图片置于地图内 | √ | ? |
 | [AnimatedMessage](plugins/AnimatedMessage) | 动画消息 | √ | ? |
+| [SceneDistort](plugins/SceneDistort) | 场景扭曲 | √ | ? |
 
 
 ## Copyright
-Copyright (C) 2020-2021 Mikan(MikanHako)  
+Copyright (C) 2019-2021 Mikan(MikanHako)  
