@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan (MikanHako)
 //  plugin : MKP_LogWriter.js 日志记录
-// version : v1.0.3 解决JsonEx.stringify报错问题
+// version : v1.0.4 自定义了序列化方法，解决JsonEx.stringify影响被序列化对象的问题
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -23,6 +23,7 @@
  * @plugindesc 日志记录 <MKP_LogWriter>
  * @author Mikan(MikanHako)
  * @version 
+ *   v1.0.4 自定义了序列化方法，解决JsonEx.stringify影响被序列化对象的问题
  *   v1.0.3 解决JsonEx.stringify报错问题
  *   v1.0.2 先显示按钮再显示文字 防止文字太长使得按钮不显示
  *   v1.0.1 增加按钮提示 + 可以通过插件参数设置按钮文字和颜色
@@ -69,6 +70,11 @@
  * 
  * + 打开详细信息文件夹
  *   `ConsoleRecorder.showDetailInfoInExplorer()`  
+ * 
+ * 
+ * ## 后续任务
+ * 
+ * - [x] 自己的序列化方法
  * 
  * 
  * ## 联系方式
@@ -167,507 +173,237 @@
  * 
  */
 
-
-
-
 var MK_Plugins = MK_Plugins || {};
-MK_Plugins.paramGet = MK_Plugins.paramGet || {};
-MK_Plugins.param = MK_Plugins.param || {};
-MK_Plugins.class = MK_Plugins.class || {};
-MK_Plugins.datas = MK_Plugins.datas || {};
-
-
-MK_Plugins.getPluginParam = MK_Plugins.getPluginParam ||
-function (pluginName) {
-	var param = PluginManager.parameters(pluginName);
-	if (!param || JSON.stringify(param) === '{}') {
-		var list = $plugins.filter(function (i) {
-			return i.description.contains('<' + pluginName + '>');
-		});
-		for (var i = 0; i < list.length; i++) {
-			var realPluginName = list[i].name;
-			if (realPluginName !== pluginName)
-				return PluginManager.parameters(realPluginName);
-		}
-		return {};
-	}
-	return param;
-};
-
-
-
-
-(function() {
-
-	var pluginName = 'MKP_LogWriter';
-	MK_Plugins.paramGet[pluginName] = MK_Plugins.getPluginParam(pluginName);
-	MK_Plugins.param[pluginName] = {};
-
-	function parse_boolean(val, defVal) {
-		if (val === 'true') return true;
-		else if (val === 'false') return false;
-		else return JSON.parse(JSON.stringify(defVal));
-	}
-
-	function parse_string(val, defVal) {
-		if (!!val) return String(val);
-		else return String(defVal);
-	}
-
-	var paramGet = MK_Plugins.paramGet[pluginName];
-	var param = MK_Plugins.param[pluginName];
-
-	param['ShowButton_Retry']       	 = parse_boolean(paramGet['ShowButton_Retry']   	, 'true');
-	param['ButtonText_Retry']       	 = parse_string(paramGet['ButtonText_Retry']    	, 'retry');
-	param['ButtonPrompt_Retry']     	 = parse_string(paramGet['ButtonPrompt_Retry']  	, 'reload picture or script file');
-
-	param['ShowButton_SaveError']   	 = parse_boolean(paramGet['ShowButton_SaveError'] 	, 'true');
-	param['ButtonText_SaveError']   	 = parse_string(paramGet['ButtonText_SaveError'] 	, 'save error info');
-	param['ButtonPrompt_SaveError'] 	 = parse_string(paramGet['ButtonPrompt_SaveError'] 	, 'collect error information for debugging');
-
-	param['ShowButton_ShowDetail']  	 = parse_boolean(paramGet['ShowButton_ShowDetail'] 	, 'true');
-	param['ButtonText_ShowDetail']  	 = parse_string(paramGet['ButtonText_ShowDetail'] 	, 'show detail info in explorer');
-	param['ButtonPrompt_ShowDetail'] 	 = parse_string(paramGet['ButtonPrompt_ShowDetail'] , 'show detail information for debugging');
-
-	param['ButtonTextColor']        	 = parse_string(paramGet['ButtonTextColor']     	, '#ffffff');
-	param['ButtonPromptColor']      	 = parse_string(paramGet['ButtonPromptColor']   	, 'orange');
-
-})();
-
-
-
-
-// ----------------------------------------------------------------
-// ConsoleRecorder
 
 function ConsoleRecorder() {
-	throw new Error("\"ConsoleRecorder\" is a static class.");
-};
-
-// --------------------------------
-// 初始化
-
-ConsoleRecorder.initialize = function() {
-	this.clearRecords();
-
-	this._setupConsoleLogFunction();
-	this._setupConsoleInfoFunction();
-	this._setupConsoleWarnFunction();
-	this._setupConsoleErrorFunction();
-};
-
-ConsoleRecorder.clearRecords = function() {
-	this._records = [];
-};
-
-// --------------------------------
-// 创造和添加记录
-
-ConsoleRecorder.makeErrorStack = function(error, deep, abbreviated) {
-	return error.stack
-		.split('\n')
-		//.slice(4)
-		.slice(deep || 0)
-		.map(each => 
-			abbreviated
-			 ? each.replace(
-				/chrome-extension:\/\/[a-z]*?\//, ''
-			)
-			 : each.replace(
-				/chrome-extension:\/\/[a-z]*?\//, 
-				'file://' + nw.__dirname.replace(/\\/g, '/') + '/'
-			)
-		)
-		.join('\n');
-};
-
-ConsoleRecorder._makeNewRecord = function(type, ...args) {
-	var error = '';
-	try { throw new Error(); }
-	catch (e) { error = e; }
-	return {
-		type : type, 
-		msg : [...args].map(function(each) {
-			try {
-				return JsonEx.stringify(each);
-			}
-			catch (e1) {
-				try {
-					return JSON.stringify(each);
-				}
-				catch (e2) {
-					try {
-						return `${String(object)}(can't stringify)`;
-					}
-					catch (e3) {
-						return `(unknown object)`;
-					}
-				}
-			}
-		}).join('  '), 
-
-		stack : this.makeErrorStack(error, 4), 
-		time : Date.now(), 
-	};
-};
-
-ConsoleRecorder._addNewRecord = function(type, ...args) {
-	this._records.push(this._makeNewRecord(type, ...args));
-};
-
-// --------------------------------
-// 设置 console 函数
-
-ConsoleRecorder._setupConsoleLogFunction = function() {
-	this._console_log_function = console.log;
-	console.log = function() {
-		ConsoleRecorder._addNewRecord('log', ...arguments);
-		ConsoleRecorder._console_log_function.apply(this, arguments);
-	};
-};
-ConsoleRecorder._setupConsoleInfoFunction = function() {
-	this._console_info_function = console.info;
-	console.info = function() {
-		ConsoleRecorder._addNewRecord('info', ...arguments);
-		ConsoleRecorder._console_info_function.apply(this, arguments);
-	};
-};
-ConsoleRecorder._setupConsoleWarnFunction = function() {
-	this._console_warn_function = console.warn;
-	console.warn = function() {
-		ConsoleRecorder._addNewRecord('warn', ...arguments);
-		ConsoleRecorder._console_warn_function.apply(this, arguments);
-	};
-};
-ConsoleRecorder._setupConsoleErrorFunction = function() {
-	this._console_error_function = console.error;
-	console.error = function() {
-		ConsoleRecorder._addNewRecord('error', ...arguments);
-		ConsoleRecorder._console_error_function.apply(this, arguments);
-	};
-};
-
-// --------------------------------
-// 保存消息
-
-ConsoleRecorder.makeSaveMessage = function() {
-	return this._records
-		.map(record => 
-			[
-				`[${ record.type }] [${ new Date(record.time).toJSON() }]`, 
-				record.msg, 
-				record.stack, 
-			].join('\n')
-		).join('\n\n');
-};
-
-ConsoleRecorder.messageFilePath = function() {
-	return nw.__dirname + '\\save';
-};
-ConsoleRecorder.messageFileFullName = function() {
-	return this.messageFilePath() + '\\errorInfo.log';
-};
-
-(function() {
-
-const _MK_StorageManager_localFilePath = StorageManager.localFilePath;
-StorageManager.localFilePath = function(savefileId) {
-	if (savefileId === 'errorInfo') {
-		return this.localFileDirectoryPath() + 'errorInfo.log';
-	}
-	else {
-		return _MK_StorageManager_localFilePath.apply(this, arguments);
-	}
-};
-
-const _MK_StorageManager_webStorageKey = StorageManager.webStorageKey;
-StorageManager.webStorageKey = function(savefileId) {
-	if (savefileId === 'errorInfo') {
-		return 'Error Info';
-	}
-	else {
-		return _MK_StorageManager_webStorageKey.apply(this, arguments);
-	}
-};
-
-})();
-
-ConsoleRecorder.saveMessageFile = function(callback) {
-	StorageManager.save('errorInfo', this.makeSaveMessage());
-};
-
-// --------------------------------
-// 显示文件
-
-ConsoleRecorder.showMessageFileInExplorer = function() {
-	nw.Shell.showItemInFolder(this.messageFileFullName());
-};
-
-ConsoleRecorder.showDetailInfoInExplorer = function() {
-	nw.Shell.showItemInFolder(nw.App.dataPath);
-};
-
-
-MK_Plugins.class['ConsoleRecorder'] = ConsoleRecorder;
-
-
-ConsoleRecorder.initialize();
-
-
-
-
-
-(function() {
-
-const pluginName = 'MKP_LogWriter';
-const param = MK_Plugins.param[pluginName];
-
-Graphics.ERROR_PRINTER_SHOW_BUTTON_RETRY = param['ShowButton_Retry'];
-Graphics.ERROR_PRINTER_BUTTON_TEXT_RETRY = param['ButtonText_Retry'];
-Graphics.ERROR_PRINTER_BUTTON_PROMPT_RETRY = param['ButtonPrompt_Retry'];
-
-Graphics.ERROR_PRINTER_SHOW_BUTTON_SAVE_ERROR = param['ShowButton_SaveError'];
-Graphics.ERROR_PRINTER_BUTTON_TEXT_SAVE_ERROR = param['ButtonText_SaveError'];
-Graphics.ERROR_PRINTER_BUTTON_PROMPT_SAVE_ERROR = param['ButtonPrompt_SaveError'];
-
-Graphics.ERROR_PRINTER_SHOW_BUTTON_SHOW_DETAIL = param['ShowButton_ShowDetail'];
-Graphics.ERROR_PRINTER_BUTTON_TEXT_SHOW_DETAIL = param['ButtonText_ShowDetail'];
-Graphics.ERROR_PRINTER_BUTTON_PROMPT_SHOW_DETAIL = param['ButtonPrompt_ShowDetail'];
-
-Graphics.ERROR_PRINTER_BUTTON_TEXT_COLOR = param['ButtonTextColor'];
-Graphics.ERROR_PRINTER_BUTTON_PROMPT_COLOR = param['ButtonPromptColor'];
-
-})();
-
-
-(function() {
-
-
-Graphics._createErrorPrinterButton = function(name, callback) {
-	var button = document.createElement('button');
-	button.innerHTML = name;
-	button.style.margin = '5px';
-	button.style.fontSize = '24px';
-	button.style.color = this.ERROR_PRINTER_BUTTON_TEXT_COLOR;
-	button.style.backgroundColor = '#000000';
-	button.onmousedown = button.ontouchstart = callback;
-	return button;
-};
-
-Graphics._createErrorPrinterButtonPrompt = function(text) {
-	var font = document.createElement('font');
-	font.innerHTML = text;
-	font.style.color = this.ERROR_PRINTER_BUTTON_PROMPT_COLOR;
-	font.style.margin = '5px';
-	return font;
-};
-
-Graphics._errorPrinterAddRetryLoad = function() {
-	var button = this._createErrorPrinterButton(
-		this.ERROR_PRINTER_BUTTON_TEXT_RETRY, 
-		function(event) {
-			ResourceHandler.retry();
-			event.stopPropagation();
-		});
-	this._errorPrinter.appendChild(button);
-
-	var msg = this._createErrorPrinterButtonPrompt(
-		this.ERROR_PRINTER_BUTTON_PROMPT_RETRY);
-	this._errorPrinter.appendChild(msg);
-};
-
-Graphics._errorPrinterAddSaveError = function() {
-	var button = this._createErrorPrinterButton(
-		this.ERROR_PRINTER_BUTTON_TEXT_SAVE_ERROR, 
-		function(event) {
-			ConsoleRecorder.saveMessageFile();
-			ConsoleRecorder.showMessageFileInExplorer();
-		});
-	this._errorPrinter.appendChild(button);
-
-	var msg = this._createErrorPrinterButtonPrompt(
-		this.ERROR_PRINTER_BUTTON_PROMPT_SAVE_ERROR);
-	this._errorPrinter.appendChild(msg);
-};
-
-Graphics._errorPrinterAddShowDetail = function() {
-	var button = this._createErrorPrinterButton(
-		this.ERROR_PRINTER_BUTTON_TEXT_SHOW_DETAIL, 
-		function(event) {
-			ConsoleRecorder.showDetailInfoInExplorer();
-		});
-	this._errorPrinter.appendChild(button);
-
-	var msg = this._createErrorPrinterButtonPrompt(
-		this.ERROR_PRINTER_BUTTON_PROMPT_SHOW_DETAIL);
-	this._errorPrinter.appendChild(msg);
-};
-
-Graphics._errorPrinterAddBr = function() {
-	this._errorPrinter.appendChild(document.createElement('br'));
-};
-
-Graphics._errorPrinterAddErrorMessage = function(name, message) {
-	var font1 = document.createElement('font');
-	font1.color = 'yellow';
-	font1.innerHTML = '<b>' + name + '</b>';
-
-	var font2 = document.createElement('font');
-	font2.color = 'white';
-	font2.innerHTML = '' + message;
-
-	this._errorPrinter.appendChild(font1);
-	this._errorPrinterAddBr();
-	this._errorPrinter.appendChild(font2);
-	this._errorPrinterAddBr();
-};
-
-
-const _MK_Graphics__updateErrorPrinter = Graphics._updateErrorPrinter;
-Graphics._updateErrorPrinter = function() {
-	_MK_Graphics__updateErrorPrinter.apply(this, arguments);
-
-	this._errorPrinter.height = this._height * 0.9;
-	this._errorPrinter.style.textAlign = 'left';
-	this._centerElement(this._errorPrinter);
-};
-
-const _MK_Graphics_printError = Graphics.printError;
-Graphics.printError = function(name, message) {
-	this._errorShowed = true;
-	if (this._errorPrinter) {
-		if (this.ERROR_PRINTER_SHOW_BUTTON_SAVE_ERROR) {
-			this._errorPrinterAddSaveError();
-			this._errorPrinterAddBr();
-		}
-
-		if (this.ERROR_PRINTER_SHOW_BUTTON_SHOW_DETAIL) {
-			this._errorPrinterAddShowDetail();
-			this._errorPrinterAddBr();
-		}
-
-		this._errorPrinterAddErrorMessage(name, message);
-	}
-	this._applyCanvasFilter();
-	this._clearUpperCanvas();
-};
-
-const _MK_Graphics_printLoadingError = Graphics.printLoadingError;
-Graphics.printLoadingError = function(url) {
-	if (this._errorPrinter && !this._errorShowed) {
-		if (this.ERROR_PRINTER_SHOW_BUTTON_RETRY) {
-			this._errorPrinterAddRetryLoad();
-			this._errorPrinterAddBr();
-		}
-
-		if (this.ERROR_PRINTER_SHOW_BUTTON_SAVE_ERROR) {
-			this._errorPrinterAddSaveError();
-			this._errorPrinterAddBr();
-		}
-
-		if (this.ERROR_PRINTER_SHOW_BUTTON_SHOW_DETAIL) {
-			this._errorPrinterAddShowDetail();
-			this._errorPrinterAddBr();
-		}
-
-		this._errorPrinterAddErrorMessage('Loading Error', 'Failed to load: ' + url);
-
-		this._loadingCount = -Infinity;
-	}
-};
-
-
-const _MK_Graphics__createRenderer = Graphics._createRenderer;
-Graphics._createRenderer = function() {
-	PIXI.dontSayHello = true;
-	var width = this._width;
-	var height = this._height;
-	var options = { view: this._canvas };
-	try {
-		switch (this._rendererType) {
-		case 'canvas':
-			this._renderer = new PIXI.CanvasRenderer(width, height, options);
-			break;
-		case 'webgl':
-			this._renderer = new PIXI.WebGLRenderer(width, height, options);
-			break;
-		default:
-			this._renderer = PIXI.autoDetectRenderer(width, height, options);
-			break;
-		}
-
-		if(this._renderer && this._renderer.textureGC)
-			this._renderer.textureGC.maxIdle = 1;
-
-	} catch (e) {
-		console.error('fail to Graphics._createRenderer', ConsoleRecorder.makeErrorStack(e));
-		this._renderer = null;
-	}
-};
-
-const _MK_WebAudio__createContext = WebAudio._createContext;
-WebAudio._createContext = function() {
-	try {
-		if (typeof AudioContext !== 'undefined') {
-			this._context = new AudioContext();
-		} else if (typeof webkitAudioContext !== 'undefined') {
-			this._context = new webkitAudioContext();
-		}
-	} catch (e) {
-		console.error('fail to WebAudio._createContext', ConsoleRecorder.makeErrorStack(e));
-		this._context = null;
-	}
-};
-
-const _MK_DataManager_saveGame = DataManager.saveGame;
-DataManager.saveGame = function(savefileId) {
-	try {
-		StorageManager.backup(savefileId);
-		return this.saveGameWithoutRescue(savefileId);
-	} catch (e) {
-		console.error(e);
-		try {
-			StorageManager.remove(savefileId);
-			StorageManager.restoreBackup(savefileId);
-		} catch (e2) {
-			console.error('fail to DataManager.saveGame', 
-				ConsoleRecorder.makeErrorStack(e), 
-				ConsoleRecorder.makeErrorStack(e2), 
-			);
-		}
-		return false;
-	}
-};
-
-const _MK_SceneManager_onError = SceneManager.onError;
-SceneManager.onError = function(e) {
-	console.error(e.message);
-	console.error(e.filename, e.lineno);
-	try {
-		this.stop();
-		Graphics.printError('Error', e.message);
-		AudioManager.stopAll();
-	} catch (e2) {
-		console.error('fail to SceneManager.onError', ConsoleRecorder.makeErrorStack(e));
-	}
-};
-
-const _MK_SceneManager_catchException = SceneManager.catchException;
-SceneManager.catchException = function(e) {
-	if (e instanceof Error) {
-		console.error(ConsoleRecorder.makeErrorStack(e));
-		Graphics.printError(
-			e.name + '<br>' + e.message, 
-			ConsoleRecorder.makeErrorStack(e, 1, true).replace(/\n/g, '<br>'), 
-		);
-	} else {
-		Graphics.printError('UnknownError', e);
-	}
-	AudioManager.stopAll();
-	this.stop();
-};
-
-})();
-
-
-
+    throw new Error('"ConsoleRecorder" is a static class.');
+}
+
+MK_Plugins.paramGet = MK_Plugins.paramGet || {}, MK_Plugins.param = MK_Plugins.param || {}, 
+MK_Plugins.class = MK_Plugins.class || {}, MK_Plugins.datas = MK_Plugins.datas || {}, 
+MK_Plugins.getPluginParam = MK_Plugins.getPluginParam || function(e) {
+    var r = PluginManager.parameters(e);
+    if (r && "{}" !== JSON.stringify(r)) return r;
+    for (var o = $plugins.filter(function(r) {
+        return r.description.contains("<" + e + ">");
+    }), t = 0; t < o.length; t++) {
+        var n = o[t].name;
+        if (n !== e) return PluginManager.parameters(n);
+    }
+    return {};
+}, function() {
+    var r = "MKP_LogWriter";
+    function parse_boolean(r, e) {
+        return "true" === r || "false" !== r && JSON.parse(JSON.stringify(e));
+    }
+    function parse_string(r, e) {
+        return r ? String(r) : String(e);
+    }
+    MK_Plugins.paramGet[r] = MK_Plugins.getPluginParam(r), MK_Plugins.param[r] = {};
+    var e = MK_Plugins.paramGet[r], r = MK_Plugins.param[r];
+    r.ShowButton_Retry = parse_boolean(e.ShowButton_Retry, "true"), r.ButtonText_Retry = parse_string(e.ButtonText_Retry, "retry"), 
+    r.ButtonPrompt_Retry = parse_string(e.ButtonPrompt_Retry, "reload picture or script file"), 
+    r.ShowButton_SaveError = parse_boolean(e.ShowButton_SaveError, "true"), r.ButtonText_SaveError = parse_string(e.ButtonText_SaveError, "save error info"), 
+    r.ButtonPrompt_SaveError = parse_string(e.ButtonPrompt_SaveError, "collect error information for debugging"), 
+    r.ShowButton_ShowDetail = parse_boolean(e.ShowButton_ShowDetail, "true"), r.ButtonText_ShowDetail = parse_string(e.ButtonText_ShowDetail, "show detail info in explorer"), 
+    r.ButtonPrompt_ShowDetail = parse_string(e.ButtonPrompt_ShowDetail, "show detail information for debugging"), 
+    r.ButtonTextColor = parse_string(e.ButtonTextColor, "#ffffff"), r.ButtonPromptColor = parse_string(e.ButtonPromptColor, "orange");
+}(), ConsoleRecorder.initialize = function() {
+    this.clearRecords(), this._setupConsoleLogFunction(), this._setupConsoleInfoFunction(), 
+    this._setupConsoleWarnFunction(), this._setupConsoleErrorFunction();
+}, ConsoleRecorder.clearRecords = function() {
+    this._records = [];
+}, ConsoleRecorder.makeErrorStack = function(r, e, o) {
+    return r.stack.split("\n").slice(e || 0).map(r => o ? r.replace(/chrome-extension:\/\/[a-z]*?\//, "") : r.replace(/chrome-extension:\/\/[a-z]*?\//, "file://" + nw.__dirname.replace(/\\/g, "/") + "/")).join("\n");
+}, ConsoleRecorder.makeArgumentsString = function(...r) {
+    return [ ...r ].map(r => this.stringify(r), this).join("  \n");
+}, ConsoleRecorder._makeNewRecord = function(r, ...e) {
+    var o = "";
+    try {
+        throw new Error();
+    } catch (r) {
+        o = r;
+    }
+    return {
+        type: r,
+        msg: this.makeArgumentsString(...e),
+        stack: this.makeErrorStack(o, 4),
+        time: Date.now()
+    };
+}, ConsoleRecorder._addNewRecord = function(r, ...e) {
+    this._records.push(this._makeNewRecord(r, ...e));
+}, ConsoleRecorder.STRINGIFY_MAX_DEEP = 0, ConsoleRecorder.stringify = function(r) {
+    return JSON.stringify(this._stringifyEncode(r, 0));
+}, ConsoleRecorder._stringifyEncode = function(r, e) {
+    var o = Object.prototype.toString.call(r), t = "[Unknown]";
+    if ("[object Object]" === o) if (e > this.STRINGIFY_MAX_DEEP) t = `[object Object : ${r.constructor ? r.constructor.name : "Unknown"}]`; else for (var n in t = {}, 
+    r) "function" != typeof r[n] && (t[n] = this._stringifyEncode(r[n], e + 1)); else if ("[object Array]" === o) for (var n in t = [], 
+    r) t[n] = this._stringifyEncode(r[n], e + 0); else "[object Function]" === o || (t = "[object Boolean]" === o || "[object Number]" === o || "[object String]" === o ? r : o);
+    return t;
+}, ConsoleRecorder._setupConsoleLogFunction = function() {
+    this._console_log_function = console.log, console.log = function() {
+        ConsoleRecorder._addNewRecord("log", ...arguments), ConsoleRecorder._console_log_function.apply(this, arguments);
+    };
+}, ConsoleRecorder._setupConsoleInfoFunction = function() {
+    this._console_info_function = console.info, console.info = function() {
+        ConsoleRecorder._addNewRecord("info", ...arguments), ConsoleRecorder._console_info_function.apply(this, arguments);
+    };
+}, ConsoleRecorder._setupConsoleWarnFunction = function() {
+    this._console_warn_function = console.warn, console.warn = function() {
+        ConsoleRecorder._addNewRecord("warn", ...arguments), ConsoleRecorder._console_warn_function.apply(this, arguments);
+    };
+}, ConsoleRecorder._setupConsoleErrorFunction = function() {
+    this._console_error_function = console.error, console.error = function() {
+        ConsoleRecorder._addNewRecord("error", ...arguments), ConsoleRecorder._console_error_function.apply(this, arguments);
+    };
+}, ConsoleRecorder.makeSaveMessage = function() {
+    return this._records.map(r => [ `[${r.type}] [${new Date(r.time).toJSON()}]`, r.msg, r.stack ].join("\n")).join("\n\n");
+}, ConsoleRecorder.messageFilePath = function() {
+    return nw.__dirname + "\\save";
+}, ConsoleRecorder.messageFileFullName = function() {
+    return this.messageFilePath() + "\\errorInfo.log";
+}, function() {
+    const e = StorageManager.localFilePath;
+    StorageManager.localFilePath = function(r) {
+        return "errorInfo" === r ? this.localFileDirectoryPath() + "errorInfo.log" : e.apply(this, arguments);
+    };
+    const o = StorageManager.webStorageKey;
+    StorageManager.webStorageKey = function(r) {
+        return "errorInfo" === r ? "Error Info" : o.apply(this, arguments);
+    };
+}(), ConsoleRecorder.saveMessageFile = function(r) {
+    StorageManager.save("errorInfo", this.makeSaveMessage());
+}, ConsoleRecorder.showMessageFileInExplorer = function() {
+    nw.Shell.showItemInFolder(this.messageFileFullName());
+}, ConsoleRecorder.showDetailInfoInExplorer = function() {
+    nw.Shell.showItemInFolder(nw.App.dataPath);
+}, (MK_Plugins.class.ConsoleRecorder = ConsoleRecorder).initialize(), function() {
+    var r = MK_Plugins.param.MKP_LogWriter;
+    Graphics.ERROR_PRINTER_SHOW_BUTTON_RETRY = r.ShowButton_Retry, Graphics.ERROR_PRINTER_BUTTON_TEXT_RETRY = r.ButtonText_Retry, 
+    Graphics.ERROR_PRINTER_BUTTON_PROMPT_RETRY = r.ButtonPrompt_Retry, Graphics.ERROR_PRINTER_SHOW_BUTTON_SAVE_ERROR = r.ShowButton_SaveError, 
+    Graphics.ERROR_PRINTER_BUTTON_TEXT_SAVE_ERROR = r.ButtonText_SaveError, Graphics.ERROR_PRINTER_BUTTON_PROMPT_SAVE_ERROR = r.ButtonPrompt_SaveError, 
+    Graphics.ERROR_PRINTER_SHOW_BUTTON_SHOW_DETAIL = r.ShowButton_ShowDetail, Graphics.ERROR_PRINTER_BUTTON_TEXT_SHOW_DETAIL = r.ButtonText_ShowDetail, 
+    Graphics.ERROR_PRINTER_BUTTON_PROMPT_SHOW_DETAIL = r.ButtonPrompt_ShowDetail, Graphics.ERROR_PRINTER_BUTTON_TEXT_COLOR = r.ButtonTextColor, 
+    Graphics.ERROR_PRINTER_BUTTON_PROMPT_COLOR = r.ButtonPromptColor;
+}(), function() {
+    Graphics._createErrorPrinterButton = function(r, e) {
+        var o = document.createElement("button");
+        return o.innerHTML = r, o.style.margin = "5px", o.style.fontSize = "24px", o.style.color = this.ERROR_PRINTER_BUTTON_TEXT_COLOR, 
+        o.style.backgroundColor = "#000000", o.onmousedown = o.ontouchstart = e, o;
+    }, Graphics._createErrorPrinterButtonPrompt = function(r) {
+        var e = document.createElement("font");
+        return e.innerHTML = r, e.style.color = this.ERROR_PRINTER_BUTTON_PROMPT_COLOR, 
+        e.style.margin = "5px", e;
+    }, Graphics._errorPrinterAddRetryLoad = function() {
+        var r = this._createErrorPrinterButton(this.ERROR_PRINTER_BUTTON_TEXT_RETRY, function(r) {
+            ResourceHandler.retry(), r.stopPropagation();
+        });
+        this._errorPrinter.appendChild(r);
+        r = this._createErrorPrinterButtonPrompt(this.ERROR_PRINTER_BUTTON_PROMPT_RETRY);
+        this._errorPrinter.appendChild(r);
+    }, Graphics._errorPrinterAddSaveError = function() {
+        var r = this._createErrorPrinterButton(this.ERROR_PRINTER_BUTTON_TEXT_SAVE_ERROR, function(r) {
+            ConsoleRecorder.saveMessageFile(), ConsoleRecorder.showMessageFileInExplorer();
+        });
+        this._errorPrinter.appendChild(r);
+        r = this._createErrorPrinterButtonPrompt(this.ERROR_PRINTER_BUTTON_PROMPT_SAVE_ERROR);
+        this._errorPrinter.appendChild(r);
+    }, Graphics._errorPrinterAddShowDetail = function() {
+        var r = this._createErrorPrinterButton(this.ERROR_PRINTER_BUTTON_TEXT_SHOW_DETAIL, function(r) {
+            ConsoleRecorder.showDetailInfoInExplorer();
+        });
+        this._errorPrinter.appendChild(r);
+        r = this._createErrorPrinterButtonPrompt(this.ERROR_PRINTER_BUTTON_PROMPT_SHOW_DETAIL);
+        this._errorPrinter.appendChild(r);
+    }, Graphics._errorPrinterAddBr = function() {
+        this._errorPrinter.appendChild(document.createElement("br"));
+    }, Graphics._errorPrinterAddErrorMessage = function(r, e) {
+        var o = document.createElement("font");
+        o.color = "yellow", o.innerHTML = "<b>" + r + "</b>";
+        r = document.createElement("font");
+        r.color = "white", r.innerHTML = "" + e, this._errorPrinter.appendChild(o), this._errorPrinterAddBr(), 
+        this._errorPrinter.appendChild(r), this._errorPrinterAddBr();
+    };
+    const r = Graphics._updateErrorPrinter;
+    Graphics._updateErrorPrinter = function() {
+        r.apply(this, arguments), this._errorPrinter.height = .9 * this._height, this._errorPrinter.style.textAlign = "left", 
+        this._centerElement(this._errorPrinter);
+    };
+    Graphics.printError;
+    Graphics.printError = function(r, e) {
+        this._errorShowed = !0, this._errorPrinter && (this.ERROR_PRINTER_SHOW_BUTTON_SAVE_ERROR && (this._errorPrinterAddSaveError(), 
+        this._errorPrinterAddBr()), this.ERROR_PRINTER_SHOW_BUTTON_SHOW_DETAIL && (this._errorPrinterAddShowDetail(), 
+        this._errorPrinterAddBr()), this._errorPrinterAddErrorMessage(r, e)), this._applyCanvasFilter(), 
+        this._clearUpperCanvas();
+    };
+    Graphics.printLoadingError;
+    Graphics.printLoadingError = function(r) {
+        this._errorPrinter && !this._errorShowed && (this.ERROR_PRINTER_SHOW_BUTTON_RETRY && (this._errorPrinterAddRetryLoad(), 
+        this._errorPrinterAddBr()), this.ERROR_PRINTER_SHOW_BUTTON_SAVE_ERROR && (this._errorPrinterAddSaveError(), 
+        this._errorPrinterAddBr()), this.ERROR_PRINTER_SHOW_BUTTON_SHOW_DETAIL && (this._errorPrinterAddShowDetail(), 
+        this._errorPrinterAddBr()), this._errorPrinterAddErrorMessage("Loading Error", "Failed to load: " + r), 
+        this._loadingCount = -1 / 0);
+    };
+    Graphics._createRenderer;
+    Graphics._createRenderer = function() {
+        PIXI.dontSayHello = !0;
+        var r = this._width, e = this._height, o = {
+            view: this._canvas
+        };
+        try {
+            switch (this._rendererType) {
+              case "canvas":
+                this._renderer = new PIXI.CanvasRenderer(r, e, o);
+                break;
+
+              case "webgl":
+                this._renderer = new PIXI.WebGLRenderer(r, e, o);
+                break;
+
+              default:
+                this._renderer = PIXI.autoDetectRenderer(r, e, o);
+            }
+            this._renderer && this._renderer.textureGC && (this._renderer.textureGC.maxIdle = 1);
+        } catch (r) {
+            console.error("fail to Graphics._createRenderer", ConsoleRecorder.makeErrorStack(r)), 
+            this._renderer = null;
+        }
+    };
+    WebAudio._createContext;
+    WebAudio._createContext = function() {
+        try {
+            "undefined" != typeof AudioContext ? this._context = new AudioContext() : "undefined" != typeof webkitAudioContext && (this._context = new webkitAudioContext());
+        } catch (r) {
+            console.error("fail to WebAudio._createContext", ConsoleRecorder.makeErrorStack(r)), 
+            this._context = null;
+        }
+    };
+    DataManager.saveGame;
+    DataManager.saveGame = function(r) {
+        try {
+            return StorageManager.backup(r), this.saveGameWithoutRescue(r);
+        } catch (e) {
+            console.error(e);
+            try {
+                StorageManager.remove(r), StorageManager.restoreBackup(r);
+            } catch (r) {
+                console.error("fail to DataManager.saveGame", ConsoleRecorder.makeErrorStack(e), ConsoleRecorder.makeErrorStack(r));
+            }
+            return !1;
+        }
+    };
+    SceneManager.onError;
+    SceneManager.onError = function(e) {
+        console.error(e.message), console.error(e.filename, e.lineno);
+        try {
+            this.stop(), Graphics.printError("Error", e.message), AudioManager.stopAll();
+        } catch (r) {
+            console.error("fail to SceneManager.onError", ConsoleRecorder.makeErrorStack(e));
+        }
+    };
+    SceneManager.catchException;
+    SceneManager.catchException = function(r) {
+        r instanceof Error ? (console.error(ConsoleRecorder.makeErrorStack(r)), Graphics.printError(r.name + "<br>" + r.message, ConsoleRecorder.makeErrorStack(r, 1, !0).replace(/\n/g, "<br>"))) : Graphics.printError("UnknownError", r), 
+        AudioManager.stopAll(), this.stop();
+    };
+}();

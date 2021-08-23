@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan (MikanHako)
 //  plugin : MKP_LogWriter.js 日志记录
-// version : v1.0.3 解决JsonEx.stringify报错问题
+// version : v1.0.4 自定义了序列化方法，解决JsonEx.stringify影响被序列化对象的问题
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -23,6 +23,7 @@
  * @plugindesc 日志记录 <MKP_LogWriter>
  * @author Mikan(MikanHako)
  * @version 
+ *   v1.0.4 自定义了序列化方法，解决JsonEx.stringify影响被序列化对象的问题
  *   v1.0.3 解决JsonEx.stringify报错问题
  *   v1.0.2 先显示按钮再显示文字 防止文字太长使得按钮不显示
  *   v1.0.1 增加按钮提示 + 可以通过插件参数设置按钮文字和颜色
@@ -69,6 +70,11 @@
  * 
  * + 打开详细信息文件夹
  *   `ConsoleRecorder.showDetailInfoInExplorer()`  
+ * 
+ * 
+ * ## 后续任务
+ * 
+ * - [x] 自己的序列化方法
  * 
  * 
  * ## 联系方式
@@ -260,6 +266,7 @@ ConsoleRecorder.clearRecords = function() {
 	this._records = [];
 };
 
+
 // --------------------------------
 // 创造和添加记录
 
@@ -281,6 +288,36 @@ ConsoleRecorder.makeErrorStack = function(error, deep, abbreviated) {
 		.join('\n');
 };
 
+ConsoleRecorder.makeArgumentsString = function(...args) {
+	/*
+	return [...args].map(function(each) {
+		try {
+			return JsonEx.stringify(each);
+			// ？JsonEx.stringify 给对象添加新数据 ...
+			// ？执行 JsonEx.stringify(messageWindow) 会改变其 transform._worldId 最终导致报错 ...
+			// TODO : ？自己的 序列化方法 ...
+		}
+		catch (e1) {
+			// ？普通的 JSON.stringify 可能会因对象循环而报错 ...
+			try {
+				return JSON.stringify(each);
+			}
+			catch (e2) {
+				//return `${String(object)}(can't stringify)`;
+				try {
+					return `${String(object)}(can't stringify)`;
+				}
+				catch (e3) {
+					return `(unknown object)`;
+				}
+			}
+		}
+	}).join('  ');
+	*/
+
+	return [...args].map(each => this.stringify(each), this).join('  \n');
+};
+
 ConsoleRecorder._makeNewRecord = function(type, ...args) {
 	//var stack = '';
 	//try { throw new Error(); }
@@ -293,9 +330,13 @@ ConsoleRecorder._makeNewRecord = function(type, ...args) {
 		//msg : [...args].map(each => JSON.stringify(each)).join('  '), 
 		//msg : [...args].map(each => JsonEx.stringify(each)).join('  '), 
 		// 包含 无constructor的对象时 使用JsonEx.stringify 会报错 ...
+		/*
 		msg : [...args].map(function(each) {
 			try {
 				return JsonEx.stringify(each);
+				// ？JsonEx.stringify 给对象添加新数据 ...
+				// ？执行 JsonEx.stringify(messageWindow) 会改变其 transform._worldId 最终导致报错 ...
+				// TODO : ？自己的 序列化方法 ...
 			}
 			catch (e1) {
 				// ？普通的 JSON.stringify 可能会因对象循环而报错 ...
@@ -313,6 +354,8 @@ ConsoleRecorder._makeNewRecord = function(type, ...args) {
 				}
 			}
 		}).join('  '), 
+		*/
+		msg : this.makeArgumentsString(...args), 
 
 		//stack : stack.split('\n').slice(4).join('\n'), 
 		//stack : stack
@@ -333,6 +376,57 @@ ConsoleRecorder._makeNewRecord = function(type, ...args) {
 ConsoleRecorder._addNewRecord = function(type, ...args) {
 	this._records.push(this._makeNewRecord(type, ...args));
 };
+
+
+// --------------------------------
+// 序列化方法
+
+ConsoleRecorder.STRINGIFY_MAX_DEEP = 0;
+ConsoleRecorder.stringify = function(value) {
+	return JSON.stringify(this._stringifyEncode(value, 0));
+};
+
+ConsoleRecorder._stringifyEncode = function(value, deep) {
+	var type = Object.prototype.toString.call(value);
+	var resObj = '[Unknown]';
+	if (type === '[object Object]') {
+		if (deep > this.STRINGIFY_MAX_DEEP) {
+			resObj = `[object Object : ${value.constructor ? value.constructor.name : 'Unknown'}]`;
+		}
+		else {
+			resObj = {};
+			for (var key in value) {
+				if (typeof value[key] !== 'function') {
+					resObj[key] = this._stringifyEncode(value[key], deep + 1);
+				}
+			}
+		}
+	}
+	else if (type === '[object Array]') {
+		resObj = [];
+		for (var key in value) {
+			resObj[key] = this._stringifyEncode(value[key], deep + 0);
+		}
+	}
+	else if (type === '[object Function]') {
+		//resObj = `[object Function ${value.constructor.name}]`;
+		//resObj = `[object Function]`;
+	}
+	else if (type === '[object Boolean]') {
+		resObj = value;
+	}
+	else if (type === '[object Number]') {
+		resObj = value;
+	}
+	else if (type === '[object String]') {
+		resObj = value;
+	}
+	else {
+		resObj = type;
+	}
+	return resObj;
+};
+
 
 // --------------------------------
 // 设置 console 函数
@@ -365,6 +459,7 @@ ConsoleRecorder._setupConsoleErrorFunction = function() {
 		ConsoleRecorder._console_error_function.apply(this, arguments);
 	};
 };
+
 
 // --------------------------------
 // 保存消息
@@ -415,6 +510,7 @@ ConsoleRecorder.saveMessageFile = function(callback) {
 	StorageManager.save('errorInfo', this.makeSaveMessage());
 };
 
+
 // --------------------------------
 // 显示文件
 
@@ -463,7 +559,6 @@ Graphics.ERROR_PRINTER_BUTTON_PROMPT_COLOR = param['ButtonPromptColor'];
 
 
 (function() {
-
 
 Graphics._createErrorPrinterButton = function(name, callback) {
 	var button = document.createElement('button');
@@ -678,6 +773,7 @@ DataManager.saveGame = function(savefileId) {
 	}
 };
 
+/*
 const _MK_SceneManager_run = SceneManager.run;
 SceneManager.run = function(sceneClass) {
 	try {
@@ -689,7 +785,9 @@ SceneManager.run = function(sceneClass) {
 		this.catchException(e);
 	}
 };
+*/
 
+/*
 const _MK_SceneManager_update = SceneManager.update;
 SceneManager.update = function() {
 	try {
@@ -705,6 +803,7 @@ SceneManager.update = function() {
 		this.catchException(e);
 	}
 };
+*/
 
 const _MK_SceneManager_onError = SceneManager.onError;
 SceneManager.onError = function(e) {
