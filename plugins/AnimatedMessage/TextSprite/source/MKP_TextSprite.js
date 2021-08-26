@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_TextSprite.js 文本精灵
-// version : v0.1.0.fix1 2020/11/14 修复绘制文字不会同步字体的问题
+// version : v0.2.3 2021/08/21 增加绘制圆的方法、增加移除文字精灵的方法
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -17,11 +17,23 @@
 // ================================================================
 
 
+
+
 /*:
  * @plugindesc 文本精灵 <MKP_TextSprite>
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.2.3.branch1 2021/08/22 更新插件说明
+ *   v0.2.3 2021/08/21 增加绘制圆的方法、增加移除文字精灵的方法
+ *   v0.2.2 2021/08/19 增加绘制图标的字母精灵
+ *   v0.2.1 2021/08/18 调整字母对象框架、修复部分问题
+ *     字母对象记录绘制位置和textState
+ *     增加按某一动画code筛选字母对象的方法
+ *     绘制时考虑文字外线
+ *   v0.2.0-alpha 2021/08/18 更新框架 : TextSprite解耦
+ *   v0.1.2.branch1 2021/08/17 清理冗余注释
+ *   v0.1.2 2021/08/17 更新MKP_SpriteAnimManager的框架 相应地更新插件说明
  *   v0.1.1 2021/08/16 更新插件说明及规约
  *   v0.1.0.fix1 2020/11/14 修复绘制文字不会同步字体的问题
  *   v0.1.0 2020/11/11 完成基本框架和功能的demo
@@ -38,10 +50,15 @@
  * 
  * ## 简要说明
  * 
- * 本插件`MKP_TextSprite`用来播放动画  
- * 设置动画和动画参数由另一个插件`MKP_SpriteAnimManager`负责  
+ * 完成精灵动画功能的三个插件之一  
+ * + 插件`MKP_TextSprite`(本插件)
+ *   - 用于支持绘制和控制播放动画等
+ * + 插件`MKP_SpriteAnimationSet`
+ *   - 用于提供处理动画效果等
+ * + 插件`MKP_SpriteAnimManager`
+ *   - 用于设置动画和动画参数、处理消息框文字播放动画等
  * 
- * 首先对动画进行配置，详细操作见 插件`MKP_SpriteAnimManager`  
+ * 首先对动画进行配置，详细操作见 插件【MKP_SpriteAnimManager】  
  * 之后在编辑消息时，使用特殊字串触发一些播放动画的操作，
  * 如：创建动画、播放动画、暂停动画 等  
  * 详见 【使用方法】  
@@ -49,7 +66,12 @@
  * 
  * ## 使用方法
  * 
- * 在【显示文本】之前，需要设置动画，详见 插件`MKP_SpriteAnimManager`  
+ * 按顺序导入 完成精灵动画功能的三个插件  
+ * + MKP_TextSprite
+ * + MKP_SpriteAnimationSet
+ * + MKP_SpriteAnimManager
+ * 
+ * 在【显示文本】之前，需要设置动画，详见 插件【MKP_SpriteAnimManager】  
  * 之后在【显示文本】里编辑消息时，使用控制字符触发操作，详见 【控制字符】  
  * 
  * 
@@ -131,21 +153,22 @@
  * 
  * ## 其他说明
  * 
- * #### 动画列表，详细说明和参数见插件`MKP_SpriteAnimManager`
+ * #### 动画列表，详细说明和参数见插件【MKP_SpriteAnimationSet】
  * 注 : id 为 默认动画id  
  * | id | 动画效果 |
  * | :- | :------- |
- * |  1 | 淡入淡出 |
- * |  2 | 缩放     |
- * |  3 | 翻转     |
- * |  4 | 上下出现(未完成) |
- * |  5 | 震动     |
- * |  6 | 剧烈缩放 |
- * |  7 | 波浪缩放 |
- * |  8 | 旋涡     |
- * |  9 | 摇晃     |
- * | 10 | 随机     |
- * | 11 | 卡拉Ok   |
+ * |  2 | 淡入淡出 |
+ * |  3 | 缩放     |
+ * |  4 | 翻转     |
+ * |  5 | 上下出现(未完成) |
+ * |  6 | 震动     |
+ * |  7 | 剧烈缩放 |
+ * |  8 | 波浪缩放 |
+ * |  9 | 旋涡     |
+ * | 10 | 摇晃     |
+ * | 11 | 随机     |
+ * | 32 | 卡拉Ok   |
+ * | 52 | 文字居中 |
  * 
  * 
  * ## 使用示例
@@ -163,10 +186,13 @@
  * 
  * ## 后续任务
  * 
- * - [ ] 添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
- * - [ ] 消息窗口关闭时，停止(?或销毁)动画实例
- * - [ ] 绘画文字时，考虑文字阴影，增加宽度
- * - [ ] 可以创建任意数量带id的无窗口的文本，显示时指定id，用id管理控制或关闭
+ * - [ ] ?添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
+ * - [ ] ?消息窗口关闭时，停止(?或销毁)动画实例
+ * - [x] 绘画文字时，考虑文字阴影，增加宽度
+ * - [ ] ?可以创建任意数量带id的无窗口的文本，显示时指定id，用id管理控制或关闭
+ * - [x] 更新插件说明
+ * - [ ] 默认关闭特殊绘制模式，需要时再打开
+ * - [ ] 优化创建字母精灵，缓存一些sprite和bitmap，防止创建太多
  * 
  * 
  * ## 联系方式
@@ -207,112 +233,144 @@
 // 拓展contents 修改drawText
 
 function MK_TextBitmap() {
-    this.initialize.apply(this, arguments);
+	this.initialize.apply(this, arguments);
 };
 
 MK_TextBitmap.prototype = Object.create(Bitmap.prototype);
 MK_TextBitmap.prototype.constructor = MK_TextBitmap;
 
 MK_TextBitmap.prototype.initialize = function(width, height) {
-    Bitmap.prototype.initialize.apply(this, arguments);
+	Bitmap.prototype.initialize.apply(this, arguments);
 
-    this._textSprite = null;
-    this._textMode = false;
+	this._textSprite = null;
+	this._textMode = false;
 };
 
 MK_TextBitmap.prototype.setTextSprite = function(sprite) {
-    this._textSprite = sprite;
+	this._textSprite = sprite;
 };
 MK_TextBitmap.prototype.textModeOn = function() {
-    this._textMode = true;
+	this._textMode = true;
 };
 MK_TextBitmap.prototype.textModeOff = function() {
-    this._textMode = false;
+	this._textMode = false;
 };
 
 MK_TextBitmap.prototype.needTextMode = function() {
-    return this._textMode && this._textSprite;
+	return this._textMode && this._textSprite;
 };
 
 
-// 最终手段1，修改bitmap._context
-
-// 最终手段2，修改bitmap.drawText
-//MK_TextBitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, align, targetContext) {
-//};
-
-
-MK_TextBitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, align) {
+//MK_TextBitmap.prototype.drawText = function(text, x, y, maxWidth, lineHeight, align) {
+MK_TextBitmap.prototype.drawText = function(text, drawX, drawY, maxWidth, lineHeight, align) {
 	if (this.needTextMode()) {
-		//var bitmap = new Bitmap(maxWidth, lineHeight);
-		// ？drawTextEx给的maxWidth 是measureTextWidth的2倍 ...
-		// ？但是textState增加的宽 是measureTextWidth的1倍 ...
-
-
 		//var bitmap = new Bitmap(this.measureTextWidth(text), lineHeight);
-		// ？需要把原bitmap(即MK_TextBitmap)的配置给新bitmap ...
-
-		//var bitmap = Object.create(this);
-		//bitmap.textModeOff();
-		//bitmap.resize(this.measureTextWidth(text), lineHeight);
-		// ？不行，使用 Object.create 存在问题 ...
-		// ？改 复制原bitmap配置 为 使用原bitmap进行绘画 ...
-
-		var bitmap = new Bitmap(this.measureTextWidth(text), lineHeight);
-
-		// ？TODO : 还要考虑文字阴影，所以要加宽一点，同时偏移绘画位置 ...
-
+		// ？还要考虑文字边框和阴影，所以要加宽一点，同时偏移绘画位置 ...
+		var textMetrics = this.measureTextWidthWithOutline(text);
+		var bitmap = new Bitmap(
+			textMetrics.width + textMetrics.offsetWidth, 
+			lineHeight + textMetrics.offsetHeight);
 
 		var sprite = new Sprite(bitmap);
-		sprite.x = x;
-		sprite.y = y;
+		//sprite.x = x;
+		//sprite.y = y;
+		//sprite.x = drawX - textMetrics.offsetX;
+		//sprite.y = drawY - textMetrics.offsetY;
+		sprite.x = drawX + textMetrics.offsetX;
+		sprite.y = drawY + textMetrics.offsetY;
 
-		// ？把 this 的全部数据 搬到 bitmap ...
-		// ？或者 换canvas ...
-		// ？这里选择后者 ...
-		//bitmap.drawText(text, 0, 0, maxWidth, lineHeight, align);
+		// 替换canvas 这样就不需要复制bitmap的配置了
 		var canvas = this._canvas;
 		var context = this._context;
 
-		//this._canvas = bitmap._canvas;
-		//this._context = bitmap._context;
-		// ？设置无效 ...
-		// ？_canvas, _context 是 定义的get方法，且没有 set方法 ...
-		// ？实际的属性名是 __canvas, __context ...
 		this.__canvas = bitmap._canvas;
 		this.__context = bitmap._context;
 
-		//bitmap.drawText(text, 0, 0, maxWidth, lineHeight, align);
 		this.textModeOff();
-		this.drawText(text, 0, 0, maxWidth, lineHeight, align);
+		//this.drawText(text, 0, 0, maxWidth, lineHeight, align);
+		//this.drawText(text, 
+		//	-textMetrics.offsetX, -textMetrics.offsetY, maxWidth, lineHeight, align);
+		Bitmap.prototype.drawText.call(this, text, 
+			-textMetrics.offsetX, -textMetrics.offsetY, maxWidth, lineHeight, align);
 		this.textModeOn(); // 这里当做之前一定是on状态，所以还原时直接on了
 
-		//this._canvas = canvas;
-		//this._context = context;
 		this.__canvas = canvas;
 		this.__context = context;
 
-
-		//if (!this._textSprite._letters) {
-		//	this._textSprite._letters = [];
-		//}
-		// 检查也放进 addLetterSprite
-		//this._textSprite._letters.push(sprite);
-		//this._textSprite.addChild(sprite);
-		// FINISH : this._textSprite.addTextSprite(sprite);
-		this._textSprite.addLetterSprite(sprite);
+		//this._textSprite.addLetterSprite(sprite, text, x, y);
+		this._textSprite.addLetterSprite(sprite, text, drawX, drawY, sprite.x, sprite.y);
 	}
 	else {
 		Bitmap.prototype.drawText.apply(this, arguments);
 	}
 };
 
+// 为了支持 drawIcon 还要拓展 blt 方法
+MK_TextBitmap.prototype.blt = function(source, sx, sy, sw, sh, drawX, drawY, dw, dh) {
+	if (this.needTextMode()) {
+		dw = dw || sw;
+		dh = dh || sh;
+		var bitmap = new Bitmap(dw, dh);
+
+		var sprite = new Sprite(bitmap);
+		sprite.x = drawX;
+		sprite.y = drawY;
+
+		// 替换canvas 这样就不需要复制bitmap的配置了
+		var canvas = this._canvas;
+		var context = this._context;
+
+		this.__canvas = bitmap._canvas;
+		this.__context = bitmap._context;
+
+		this.textModeOff();
+		Bitmap.prototype.blt.call(this, source, sx, sy, sw, sh, 0, 0, dw, dh);
+		this.textModeOn(); // 这里当做之前一定是on状态，所以还原时直接on了
+
+		this.__canvas = canvas;
+		this.__context = context;
+
+		this._textSprite.addLetterSprite(sprite, '', drawX, drawY, sprite.x, sprite.y);
+		// TODO : 加入图片类型的字母精灵，可以记录图片信息
+	}
+	else {
+		Bitmap.prototype.drawText.apply(this, arguments);
+	}
+};
+
+MK_TextBitmap.prototype.drawCircle = function(drawX, drawY, radius, color) {
+	if (this.needTextMode()) {
+		var bitmap = new Bitmap(radius * 2, radius * 2);
+
+		var sprite = new Sprite(bitmap);
+		sprite.x = drawX - radius;
+		sprite.y = drawY - radius;
+
+		// 无需替换canvas 直接使用新bitmap的 context ...
+		//var canvas = this._canvas;
+		//var context = this._context;
+
+		//var context = bitmap._context;
+		//context.save();
+		//context.fillStyle = color;
+		//context.beginPath();
+		//context.arc(radius, radius, radius, 0, Math.PI * 2, false);
+		//context.fill();
+		//context.restore();
+		////this._setDirty();
+		//bitmap._setDirty();
+		// ？即是 新bitmap的 drawCircle 方法 ...
+		bitmap.drawCircle(radius, radius, radius, color);
+
+		this._textSprite.addLetterSprite(sprite, '', drawX, drawY, sprite.x, sprite.y);
+	}
+	else {
+		Bitmap.prototype.drawCircle.apply(this, arguments);
+	}
+};
+
+
 MK_TextBitmap.prototype.clearTextSprite = function() {
-	//this._textSprite._letters && this._textSprite._letters.forEach(function(s) {
-	//	this.removeChild(s);
-	//}, this._textSprite);
-	//this._textSprite._letters = [];
-	// FINISH : this._textSprite.clearLetters();
 	this._textSprite.clearLetters();
 };
 
@@ -320,6 +378,35 @@ MK_TextBitmap.prototype.clear = function() {
 	Bitmap.prototype.clear.apply(this, arguments);
 	this.clearTextSprite();
 };
+
+
+//(function() {
+
+// 带外框的宽度计算
+//Bitmap.prototype.measureTextWidthWithOutline = function(text) {
+MK_TextBitmap.prototype.measureTextWidthWithOutline = function(text) {
+	var lineWidth = this.outlineWidth;
+	var shadowBlur = this._context.shadowBlur;
+	// TODO : bitmap.shadowBlur
+
+	var width = this.measureTextWidth(text);
+	var padding = lineWidth + shadowBlur;
+	return {
+		offsetX : -padding / 2, 
+		offsetY : -padding / 2, 
+		offsetWidth : padding, 
+		offsetHeight : padding, 
+		width : width, 
+	};
+};
+// TODO : 是否有原生方法实现
+
+//})();
+
+
+// TODO : 默认关闭 needTextMode 需要时再开启
+// ？防止浪费性能 ...
+// ？同时 防止 在其他绘制的东西时 使用这种绘制 如绘制脸图 ...
 
 
 
@@ -335,6 +422,9 @@ MK_TextBitmap.prototype.clear = function() {
 // 每个精灵的信息 仍由文字的精灵存储
 // MK_TextSprite是精灵容器，同时储存动画，控制动画
 
+// TODO : 改名
+// 如 LetterSpriteContainer
+
 function MK_TextSprite() {
 	this.initialize.apply(this, arguments);
 };
@@ -342,6 +432,7 @@ function MK_TextSprite() {
 MK_TextSprite.prototype = Object.create(Sprite.prototype);
 MK_TextSprite.prototype.constructor = MK_TextSprite;
 
+/*
 MK_TextSprite.prototype.initialize = function() {
 	Sprite.prototype.initialize.apply(this, arguments);
 
@@ -356,9 +447,7 @@ MK_TextSprite.prototype.initialize = function() {
 };
 
 MK_TextSprite.prototype.init = function() {
-	//this.initialize.apply(this, arguments);
-	// ？再执行 Sprite.prototype.initialize 会报错 ...
-	this.bitmap = null;
+	this.bitmap = null; // ？...
 
 	// 文字精灵列表
 	this.initLetterList();
@@ -366,6 +455,22 @@ MK_TextSprite.prototype.init = function() {
 	// 文本动画列表
 	this.initTextAnimList();
 
+	// 消息窗口
+	this._msgWindow = null;
+};
+*/
+MK_TextSprite.prototype.initialize = function() {
+	Sprite.prototype.initialize.apply(this, arguments);
+	this.clearAll();
+};
+
+MK_TextSprite.prototype.clearAll = function() {
+	// 文字精灵列表
+	this.initLetterList();
+	// 文本动画列表
+	//this.initTextAnimList();
+	// 清空标志
+	this.clearAllFlag();
 	// 消息窗口
 	this._msgWindow = null;
 };
@@ -381,18 +486,20 @@ MK_TextSprite.prototype.initLetterList = function() {
 MK_TextSprite.prototype.clearLetters = function() {
 	this._letters = [];
 	this.removeChildren();
-	// ？TODO : 只移除letters中的sprite 还是 全部移除 ...
+	// TODO : 只移除letters中的sprite 还是 全部移除
+};
+
+
+// 续写该方法以监听清空文字精灵
+MK_TextSprite.prototype.onClearLetters = function() {
 };
 
 
 // --------------------------------
 // 添加文字精灵
 
+/*
 MK_TextSprite.prototype.addLetterSprite = function(sprite) {
-	//if (!this._letters) {
-	//	this._letters = [];
-	//}
-
 	this.addTextAnimTarget(sprite);
 
 	this._letters.push(sprite);
@@ -400,14 +507,114 @@ MK_TextSprite.prototype.addLetterSprite = function(sprite) {
 
 	this.addChild(sprite);
 };
-
 MK_TextSprite.prototype.addTextAnimTarget = function(sprite) {
 	this._textAnimList.forEach(function(textAnim) {
 		textAnim.addTarget(sprite);
 	}, this);
 };
+*/
+
+MK_TextSprite.prototype.makeNewLetterData = function(sprite, text, drawX, drawY, sx, sy) {
+	/*
+	var data = Object.assign({
+		letterText : text || '', 
+		spriteX : x === undefined ? sprite.x : x, 
+		spriteY : y === undefined ? sprite.y : y, 
+	},  
+	this._msgWindow ? this._msgWindow._textState : {});
+	return data;
+	*/
+	var data = {
+		spriteData : {
+			text : text || '', 
+			drawX : drawX === undefined ? sprite.x : drawX, 
+			drawY : drawY === undefined ? sprite.y : drawY, 
+			x : sx === undefined ? sprite.x : sx, 
+			y : sy === undefined ? sprite.y : sy, 
+			width : sprite.width, 
+			height : sprite.height, 
+		}, 
+		textState : Object.assign({}, 
+			this._msgWindow ? this._msgWindow._textState : {}), 
+	}; 
+	return data;
+};
+
+//MK_TextSprite.prototype.createLetterObject = function(sprite, text, x, y) {
+MK_TextSprite.prototype.createLetterObject = function(sprite) {
+	return {
+		sprite : sprite, 
+		//text : text || '', 
+		//x : x === undefined ? sprite.x : x, 
+		//y : y === undefined ? sprite.y : y, 
+		//flag : {}, 
+		flag : Object.assign({}, this._newLetterFlag), 
+		//data : {}, 
+		////data : {
+		//data :  Object.assign({
+		//	text : text || '', 
+		//	x : x === undefined ? sprite.x : x, 
+		//	y : y === undefined ? sprite.y : y, 
+		////}, 
+		//}, this.getNewLetterData()), 
+		data : this.makeNewLetterData(...arguments), 
+	}
+};
+
+//MK_TextSprite.prototype.addLetterSprite = function(sprite, text, x, y) {
+MK_TextSprite.prototype.addLetterSprite = function(sprite, text, drawX, drawY, sx, sy) {
+	if (!sprite) return ;
+
+	//this.addTextAnimTarget(sprite);
+
+	//this._letters.push(sprite);
+	//this._letters.push({
+	//	sprite : sprite, 
+	//	text : text || '', 
+	//	x : x === undefined ? sprite.x : x, 
+	//	y : y === undefined ? sprite.y : y, 
+	//	//flag : {}, 
+	//	flag : Object.assign({}, this._newLetterFlag), 
+	//});
+	//var letterObj = this.createLetterObject(sprite, text, x, y);
+	var letterObj = this.createLetterObject(...arguments);
+	this._letters.push(letterObj);
+
+	//this.initLetter(sprite); // TODO
+
+	this.addChild(sprite);
+
+	this.onAddLetterSprite(letterObj);
+};
 
 
+// 续写该方法以监听添加文字精灵
+MK_TextSprite.prototype.onAddLetterSprite = function(letterObj) {
+};
+
+
+// --------------------------------
+// 移除文字精灵
+
+MK_TextSprite.prototype.removeLetterSprite = function(sprite) {
+	var letterObjIndex = this._letters.findIndex(each => each && each.sprite === sprite);
+	if (letterObjIndex >= 0) {
+		var letterObj = this._letters[letterObjIndex];
+		this._letters.splice(letterObjIndex, 1);
+		this.removeSprite(sprite);
+		this.onRemoveLetterSprite(letterObj);
+	}
+};
+
+
+// 续写该方法以监听移除文字精灵
+MK_TextSprite.prototype.onRemoveLetterSprite = function(letterObj) {
+};
+
+
+
+
+/*
 // --------------------------------
 // 文本动画列表
 
@@ -419,13 +626,13 @@ MK_TextSprite.prototype.getTextAnim = function(code) {
 	return this._textAnimList[code];
 };
 
+// ？不耦合 textAnim ...
+
 
 // --------------------------------
 // 添加文本动画
 
 MK_TextSprite.prototype.addTextAnim = function(textAnim) {
-	//this._textAnimList.push(textAnim);
-	// ？改用code作为索引，方便找到动画实例 ...
 	this._textAnimList[textAnim.getAnimCode()] = textAnim;
 	textAnim.setTargets(this._letters);
 };
@@ -438,6 +645,8 @@ MK_TextSprite.prototype.addTextAnimByCode = function(code) {
 	var textAnim = this.createTextAnim(code);
 	!!textAnim && this.addTextAnim(textAnim);
 };
+
+// ？不耦合 textAnim ...
 
 
 // --------------------------------
@@ -453,6 +662,8 @@ MK_TextSprite.prototype.updateTextAnim = function() {
 		!!textAnim && textAnim.update();
 	}, this);
 };
+
+// ？不耦合 textAnim ...
 
 
 // --------------------------------
@@ -510,7 +721,7 @@ MK_TextSprite.prototype.setAnimFlagOn = function(code) {
 MK_TextSprite.prototype.setAnimFlagOff = function(code) {
 	this.setAnimFlagByCode(code, false);
 };
-*/
+* /
 // ？实际上是 是否需要添加文本精灵 的标记 ...
 // ？这个标记也放进MK_SpriteAnimBase里 ...
 
@@ -521,6 +732,192 @@ MK_TextSprite.prototype.setFlagAllowAddOn = function(code) {
 MK_TextSprite.prototype.setFlagAllowAddOff = function(code) {
 	var textAnim = this.getTextAnim(code);
 	!!textAnim && textAnim.setFlagAllowAddOff();
+};
+*/
+
+// ？解耦 ...
+// ？文本精灵 不应该 与动画和动画管理器 耦合 ...
+// ？这样 文本精灵 才可以做到更多的功能 比如 调整整体位置使得居中等 ...
+// ？...
+
+// ？播放动画、暂停动画、是否添加动画、添加的动画 等等的设置 都可以 归类为 设置标志 ...
+// ？所以 可以把这些状态都放在一起 当做 动画的状态 或 文本精灵的状态 ...
+
+// ？原本 设置的是 动画对象 的 播放、暂停、添加 等标志 ...
+// ？现在把这些标志放在 文本精灵的单个字母精灵里 ...
+// ？...
+
+
+// --------------------------------
+// 设置和获取标志
+
+MK_TextSprite.prototype.clearNewLetterFlag = function() {
+	this._newLetterFlag = {};
+};
+MK_TextSprite.prototype.clearTextSpriteFlag = function() {
+	this._textSpriteFlag = {};
+};
+MK_TextSprite.prototype.clearTextSpriteData = function() {
+	this._textSpriteData = {};
+};
+
+MK_TextSprite.prototype.clearAllFlag = function() {
+	this.clearNewLetterFlag();
+	this.clearTextSpriteFlag();
+	this.clearTextSpriteData();
+};
+
+MK_TextSprite.prototype.setNewLetterFlag = function(key, value) {
+	this._newLetterFlag[key] = value === undefined ? true : !!value;
+};
+MK_TextSprite.prototype.setTextSpriteFlag = function(key, value) {
+	this._textSpriteFlag[key] = value === undefined ? true : !!value;
+};
+MK_TextSprite.prototype.setTextSpriteData = function(key, value) {
+	this._textSpriteData[key] = value;
+};
+
+MK_TextSprite.prototype.animFlagFormat = function(key, code) {
+	return key + '_' + code;
+};
+
+MK_TextSprite.prototype.setNewLetterAnimFlag = function(key, code, value) {
+	//this.setNewLetterFlag(key + '_' + code, value);
+	this.setNewLetterFlag(this.animFlagFormat(key, code), value);
+};
+MK_TextSprite.prototype.setTextSpriteAnimFlag = function(key, code, value) {
+	//this.setTextSpriteFlag(key + '_' + code, value);
+	this.setTextSpriteFlag(this.animFlagFormat(key, code), value);
+};
+MK_TextSprite.prototype.setTextSpriteAnimData = function(key, code, value) {
+	//this.setTextSpriteData(key + '_' + code, value);
+	this.setTextSpriteData(this.animFlagFormat(key, code), value);
+};
+// ？TODO : 二级结构储存 ...
+
+MK_TextSprite.prototype.getLetterFlag = function(letter, key) {
+	return letter && letter.flag ? letter.flag[key] : false;
+};
+MK_TextSprite.prototype.getTextSpriteFlag = function(key) {
+	return this._textSpriteFlag[key];
+};
+MK_TextSprite.prototype.getTextSpriteData = function(key) {
+	return this._textSpriteData[key];
+};
+
+MK_TextSprite.prototype.getLetterAnimFlag = function(letter, key, code) {
+	//return letter && letter.flag ? letter.flag[key + '_' + code] : false;
+	return letter && letter.flag ? letter.flag[this.animFlagFormat(key, code)] : false;
+};
+MK_TextSprite.prototype.getTextSpriteAnimFlag = function(key, code) {
+	//return this.getTextSpriteFlag(key + '_' + code);
+	return this.getTextSpriteFlag(this.animFlagFormat(key, code));
+};
+MK_TextSprite.prototype.getTextSpriteAnimData = function(key, code) {
+	//return this.getTextSpriteData(key + '_' + code);
+	return this.getTextSpriteData(this.animFlagFormat(key, code));
+};
+
+
+/*
+MK_TextSprite.prototype.setFlagAutoOn = function(code) {
+	//this.setTextSpriteFlag('auto' + '_' + code, true);
+	this.setTextSpriteAnimFlag('auto', code, true);
+};
+MK_TextSprite.prototype.setFlagAutoOff = function(code) {
+	//this.setTextSpriteFlag('auto' + '_' + code, false);
+	this.setTextSpriteAnimFlag('auto', code, false);
+};
+
+MK_TextSprite.prototype.setFlagPlayOn = function(code) {
+	this.setTextSpriteAnimFlag('play', code, true);
+};
+MK_TextSprite.prototype.setFlagPauseOn = function(code) {
+	this.setTextSpriteAnimFlag('pause', code, true);
+};
+MK_TextSprite.prototype.setFlagContinueOn = function(code) {
+	this.setTextSpriteAnimFlag('continue', code, true);
+};
+MK_TextSprite.prototype.setFlagStopOn = function(code) {
+	this.setTextSpriteAnimFlag('stop', code, true);
+};
+
+MK_TextSprite.prototype.setFlagInitOn = function(code) {
+	this.setTextSpriteAnimFlag('init', code, true);
+};
+MK_TextSprite.prototype.setFlagInitOff = function(code) {
+	this.setTextSpriteAnimFlag('init', code, false);
+};
+
+MK_TextSprite.prototype.setFlagEnabledOn = function(code) {
+	this.setTextSpriteAnimFlag('enabled', code, true);
+};
+MK_TextSprite.prototype.setFlagEnabledOff = function(code) {
+	this.setTextSpriteAnimFlag('enabled', code, false);
+};
+
+MK_TextSprite.prototype.setAnimFlagOn = function(code) {
+	this.setTextSpriteAnimFlag('anim', code, true);
+};
+MK_TextSprite.prototype.setAnimFlagOff = function(code) {
+	this.setTextSpriteAnimFlag('anim', code, false);
+};
+
+MK_TextSprite.prototype.setFlagAllowAddOn = function(code) {
+	this.setNewLetterAnimFlag('add', code, true);
+};
+MK_TextSprite.prototype.setFlagAllowAddOff = function(code) {
+	this.setNewLetterAnimFlag('add', code, false);
+};
+*/
+
+// ？不耦合 textAnim ...
+// ？TextSprite 只提供设置和获取标志的方法 ...
+// ？但不提供设置具体动画相关的标志的方法 ...
+// ？这些标志 应由 SpriteAnimManager 设置和获取 ...
+// ？这些方法 应由 SpriteAnimManager 提供 ...
+// ？或者 交给 创建和使用 MK_TextSprite 的 Window_Message ...
+
+
+// --------------------------------
+// 获取字母对象数组
+
+MK_TextSprite.prototype.getLetterObjects = function() {
+	return this._letters;
+};
+MK_TextSprite.prototype.getLetterSprites = function() {
+	return this.getLetterObjects().map(obj => obj.sprite);
+};
+
+MK_TextSprite.prototype.filterLetterObjects = function(onFlags, offFlags) {
+	return this.getLetterObjects()
+		.filter(obj => {
+			if (!!onFlags) {
+				onFlags = Array.isArray(onFlags) ? onFlags : [onFlags];
+				for (var i = 0, l = onFlags.length; i < l; i++) {
+					if (!obj.flag[onFlags[i]]) return false;
+				}
+			}
+			if (!!offFlags) {
+				offFlags = Array.isArray(offFlags) ? offFlags : [offFlags];
+				for (var i = 0, l = offFlags.length; i < l; i++) {
+					if (!!obj.flag[offFlags[i]]) return false;
+				}
+			}
+			return true;
+		});
+};
+
+MK_TextSprite.prototype.filterLetterObjectsByAnimFlag = function(code, onKeys, offKeys) {
+	onKeys = !!onKeys
+		 ? (Array.isArray(onKeys) ? onKeys : [onKeys])
+				.map(key => this.animFlagFormat(key, code), this)
+		 : onKeys;
+	offKeys = !!offKeys
+		 ? (Array.isArray(offKeys) ? offKeys : [offKeys])
+				.map(key => this.animFlagFormat(key, code), this)
+		 : offKeys;
+	return this.filterLetterObjects(code, onKeys, offKeys);
 };
 
 
@@ -545,101 +942,54 @@ MK_TextSprite.prototype.setMsgWindow = function(msgWindow) {
 
 
 
-
+/*
 // ----------------------------------------------------------------
 // 修改 Window_Message
 
 (function() {
 
-var _MK_Window_Message__createAllParts   = Window_Message.prototype._createAllParts;
+const _MK_Window_Message__createAllParts = Window_Message.prototype._createAllParts;
 Window_Message.prototype._createAllParts = function() {
 	_MK_Window_Message__createAllParts.apply(this, arguments);
 	this._infoTextSprite = new MK_TextSprite();
 	this._windowContentsSprite.addChildAt(this._infoTextSprite, 0);
 };
 
-var _MK_Window_Message_createContents   = Window_Message.prototype.createContents;
+const _MK_Window_Message_createContents = Window_Message.prototype.createContents;
 Window_Message.prototype.createContents = function() {
 	_MK_Window_Message_createContents.apply(this, arguments);
 
-    this.contents = new MK_TextBitmap(this.contentsWidth(), this.contentsHeight());
-	this.contents.setTextSprite(this._infoTextSprite);
-	this.contents.textModeOn();
-    this.resetFontSettings();
+	var textBitmap = new MK_TextBitmap(this.contentsWidth(), this.contentsHeight());
+	textBitmap.setTextSprite(this._infoTextSprite);
+	textBitmap.textModeOn();
+	//textBitmap.textModeOff(); // ？默认关闭
+	this.contents = textBitmap;
 
-    // 改变了 this.contents.drawText
+	this.resetFontSettings();
+
+	// 改变了 this.contents.drawText
 };
 
 // TODO : 添加使用文本精灵模式的控制字符，以减少普通模式下的不稳定性
 
 
-/*
-var _MK_Window_Message__updatePauseSign   = Window_Message.prototype._updatePauseSign;
-Window_Message.prototype._updatePauseSign = function() {
-	_MK_Window_Message__updatePauseSign.apply(this, arguments);
-	if (this._hidePauseSign) {
-		this._windowPauseSignSprite.visible = false;
-	}
-};
-*/
-
-
-var _MK_Window_Message_startMessage   = Window_Message.prototype.startMessage;
+const _MK_Window_Message_startMessage = Window_Message.prototype.startMessage;
 Window_Message.prototype.startMessage = function() {
 	// 暂时
-	//this._infoTextSprite.clearEffect();
-	//this._infoTextSprite.clear();
 	this._infoTextSprite.init();
 
 	// 把textState给他
-	//this._infoTextSprite.setTextState(this._textState);
-	// ？此时还没有 _textState ...
-	// ？直接把window_message(this)给他 ...
 	this._infoTextSprite.setMsgWindow(this);
-
-	/*
-	// 暂时
-	this._hidePauseSign = false;
-	//this._autoEnd = false;
-	*/
 
 	_MK_Window_Message_startMessage.apply(this, arguments);
 };
 
-// ？TODO : 关闭时 就清除 ...
+// TODO : 关闭时 就清除
 
 
-var _MK_Window_Message_processEscapeCharacter   = Window_Message.prototype.processEscapeCharacter;
+const _MK_Window_Message_processEscapeCharacter = Window_Message.prototype.processEscapeCharacter;
 Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 	switch (code) {
-
-	/*
-	//case 'Fon':
-	// ？需要大写 ...
-	case 'FON': // flag on
-		var param = this.obtainEscapeParam(textState);
-		//this.setAnimFlagOn(param);
-		this._infoTextSprite.setAnimFlagOn(param);
-		break;
-
-	case 'FOFF': // flag off
-		var param = this.obtainEscapeParam(textState);
-		//this.setAnimFlagOff(param);
-		this._infoTextSprite.setAnimFlagOff(param);
-		break;
-
-	case 'AON': // anim effect on
-		var param = this.obtainEscapeParam(textState);
-		//this.setAnimEffectOn(param);
-		this._infoTextSprite.setAnimEffectOn(param);
-		break;
-
-	case 'AOFF': // anim effect off
-		var param = this.obtainEscapeParam(textState);
-		//this.setAnimEffectOff(param);
-		this._infoTextSprite.setAnimEffectOff(param);
-		break;
-	*/
 
 	// 消息中的obtainEscapeCode获取到的字母是大写字母，且是纯字母
 
@@ -690,76 +1040,6 @@ Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 	// ？即 使用 \XX[1][2][3] 把animcode=1的参数2设置为参数3的值 ...
 
 
-	/*
-	//case 'SKIPON': // skip on
-	//	this._showFast = true;
-	//case 'SKIPOFF': // skip off
-	//	this._showFast = false;
-	// ？改 使用两种标识 对应 开启跳过和关闭跳过 ...
-	// ？为 使用同一标识的不同参数 对应 开启跳过和关闭跳过 ...
-	//case 'SKIP': // skip
-	// ？改名为 fast，因为之后有跳过功能 ...
-	//case 'FAST': // fast
-	//	var param = this.obtainEscapeParam(textState);
-	//	if (!!param) this._showFast = true;
-	//	else this._showFast = false;
-	//	break;
-	// ？可以通过 _lineShowFast 控制是否需要文字结束后的等待 ...
-	// ？而原版下 有标识 <, > 可以 分别设置_lineShowFast为false,true ...
-
-	//case 'CURSOR': // cursor
-	// ？不是 cursor 而是 pauseSign ...
-	case 'PSIGN': // pauseSign
-		var param = this.obtainEscapeParam(textState);
-		//if (!!param) this._windowCursorSprite.visible = true;
-		//else this._windowCursorSprite.visible = false;
-		// ？update方法中 会修改其opacity(同alpha) 和 visible 以实现闪烁效果 ...
-		// ？所以需要扩展方法 ...
-		//if (!!param) this._hideCursor = false;
-		//else this._hideCursor = true;
-		// ？不是 cursor 而是 pauseSign ...
-		if (!!param) this._hidePauseSign = false;
-		else this._hidePauseSign = true;
-		break;
-
-
-	//case 'WAIT': // wait
-	//	var param = this.obtainEscapeParam(textState);
-	//	this.startWait(param);
-	//	break;
-	// 暂时移除wait功能
-
-
-	//case 'NEXT': // next
-	// ？自动下一句话 即是跳过最后的等待 即是设置pause为false ...
-	// ？可以顺便添加一个设置pause为true的功能 ...
-	/*
-	case 'PAUSE': // pause
-		var param = this.obtainEscapeParam(textState);
-		if (!!param) this.pause = true;
-		else this.pause = false;
-		break;
-	* /
-	// ？在结尾 加\pause[0] 不能实现 取消等待 ...
-	// ？因为在处理完该字符后仍然会进行暂停 ...
-	//case 'NEXT': // next
-	// ？把 直接跳过 扩展为 跳过多少字 ...
-	//case 'SKIP': // skip
-	//	var param = this.obtainEscapeParam(textState);
-	//	textState.index += param;
-	//	break;
-	// ？仍然不能实现跳过结尾的等待 ...
-	// ？所以暂时移除skip功能 ...
-
-	//case 'ATEND': // auto end
-	//	this._autoEnd = true;
-	//	break;
-	// ？可以通过 _pauseSkip 控制是否需要文字结束后的等待 ...
-	// ？而原版下 有标识 ^ 可以 设置_pauseSkip为true ...
-	*/
-	// ？独立功能，移动到另一个插件MK_MoreMsgSymbol里 ...
-
-
 	//case 'RCV': case 'REC': // recover
 	//	var param = this.obtainEscapeParam(textState);
 	//	// ？是否有必要 ...
@@ -785,10 +1065,10 @@ Window_Message.prototype.processEscapeCharacter = function(code, textState) {
 	// TODO : 全部动画效果复原
 };
 
-
-
 })();
+*/
 
+// ？应交给 SpriteAnimManager ...
 
 
 
