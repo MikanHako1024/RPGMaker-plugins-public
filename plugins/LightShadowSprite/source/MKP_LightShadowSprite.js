@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.0.2.fix1 2021/08/27 修复缺少前置插件报错的问题
  *   v0.0.2 2021/08/26 完成基础功能
  *   v0.0.1 2021/08/26 完成可行性尝试
  *   v0.0.0 2021/08/24 项目计划中
@@ -188,6 +189,7 @@ MK_LightShadowSprite.prototype.updateRenderTexture = function() {
 			if (this._container) {
 				this._container.visible = true;
 				renderer.render(this._container, this.texture);
+				// ？整体 render 还是 循环 render ...
 				this._container.visible = false;
 				//if (renderer.gl && renderer.gl.flush) {
 				//	renderer.gl.flush();
@@ -213,9 +215,9 @@ MK_LightShadowSprite.prototype._renderWebGL = function(renderer) {
 
 
 
-if (MK_Plugins.class) {
-	MK_Plugins.class['MK_LightShadowSprite'] = MK_LightShadowSprite;
-}
+//if (!!MK_Plugins && MK_Plugins.class) {
+//	MK_Plugins.class['MK_LightShadowSprite'] = MK_LightShadowSprite;
+//}
 
 
 
