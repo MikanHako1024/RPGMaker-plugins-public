@@ -4,7 +4,7 @@
 // ================================================================
 //  author : Mikan(MikanHako)
 //  plugin : MKP_LightShadowSprite.js 光影Sprite
-// version : v0.0.2 2021/08/26 完成基础功能
+// version : v0.0.3 2021/08/27 调整渲染时机
 // ----------------------------------------------------------------
 // [Twitter] https://twitter.com/_MikanHako/
 // -[GitHub] https://github.com/MikanHako1024/
@@ -24,6 +24,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.0.3 2021/08/27 调整渲染时机
  *   v0.0.2.fix1 2021/08/27 修复缺少前置插件报错的问题
  *   v0.0.2 2021/08/26 完成基础功能
  *   v0.0.1 2021/08/26 完成可行性尝试
@@ -103,6 +104,9 @@
 
 
 
+// ？拓展出一个能自由群组渲染的类 ...
+
+
 // ----------------------------------------------------------------
 // MK_LightShadowSprite
 
@@ -125,7 +129,7 @@ MK_LightShadowSprite.prototype.initialize = function(width, height) {
 	this.createContainerSprite();
 	this.createBlackSprite(width, height);
 	
-	this._rendered = true;
+	//this._rendered = true;
 
 	this.blendMode = 2;
 };
@@ -183,7 +187,10 @@ MK_LightShadowSprite.prototype.update = function() {
 };
 
 MK_LightShadowSprite.prototype.updateRenderTexture = function() {
-	if (this._rendered) {
+	//if (this._rendered) {
+	// ？改 判断有没有渲染过 ...
+	// ？为 获取渲染前的时机 即 SceneManager._accumulator 即将低于 SceneManager._deltaTime ...
+	if (SceneManager._accumulator < 2 * SceneManager._deltaTime) {
 		if (this.visible) {
 			var renderer = Graphics._renderer;
 			if (this._container) {
@@ -196,7 +203,7 @@ MK_LightShadowSprite.prototype.updateRenderTexture = function() {
 				//}
 			}
 		}
-		this._rendered = false;
+		//this._rendered = false;
 	}
 };
 
@@ -204,14 +211,14 @@ MK_LightShadowSprite.prototype.updateRenderTexture = function() {
 // --------------------------------
 // render
 
-MK_LightShadowSprite.prototype._renderCanvas = function(renderer) {
-	Sprite.prototype._renderCanvas.apply(this, arguments);
-	this._rendered = true;
-};
-MK_LightShadowSprite.prototype._renderWebGL = function(renderer) {
-	Sprite.prototype._renderWebGL.apply(this, arguments);
-	this._rendered = true;
-};
+//MK_LightShadowSprite.prototype._renderCanvas = function(renderer) {
+//	Sprite.prototype._renderCanvas.apply(this, arguments);
+//	this._rendered = true;
+//};
+//MK_LightShadowSprite.prototype._renderWebGL = function(renderer) {
+//	Sprite.prototype._renderWebGL.apply(this, arguments);
+//	this._rendered = true;
+//};
 
 
 
