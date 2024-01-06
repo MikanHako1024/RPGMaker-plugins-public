@@ -25,6 +25,7 @@ public plugins for RPGMakerMV / MZ
 | [CustomizablePluginCmd](plugins/CustomizablePluginCmd) | 自定义插件指令 | √ | √ |
 | TextManagerEx | 文本管理方案+多语言方案 | √ | √ |
 | [CustomMenuCore](plugins/CustomMenuCore) | 自定义菜单核心 | √ | √ |
+| [PixiStats](plugins/PixiStats) | Pixi性能统计 | √ | √ |
 
 #### 优化
 | Plugin | Desc | MV | MZ |
@@ -45,4 +46,4 @@ public plugins for RPGMakerMV / MZ
 | KeyConfig | 按键配置 | √ | √ |
 
 ## Copyright
-Copyright (C) 2019-2023 Mikan(MikanHako)  
+Copyright (C) 2019-2024 Mikan(MikanHako)  
