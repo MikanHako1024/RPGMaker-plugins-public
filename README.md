@@ -24,6 +24,7 @@ public plugins for RPGMakerMV / MZ
 | AudioWaveView | 音频波形可视化 | √ | √ |
 | CustomizablePluginCmd | 自定义插件指令 | √ | √ |
 | TextManagerEx | 文本管理方案+多语言方案 | √ | √ |
+| CustomMenuCore | 自定义菜单核心 | √ | √ |
 
 #### 优化
 | Plugin | Desc | MV | MZ |
@@ -41,6 +42,7 @@ public plugins for RPGMakerMV / MZ
 | MapStartupEvent | 地图启动事件 | √ | √ |
 | EventTriggerPriority | 事件触发优先级 | √ | √ |
 | ItemChoiceFilter | 筛选可选物品 | × | √ |
+| KeyConfig | 按键配置 | √ | √ |
 
 ## Copyright
 Copyright (C) 2019-2023 Mikan(MikanHako)  
