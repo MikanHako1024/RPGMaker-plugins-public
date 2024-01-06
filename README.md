@@ -22,7 +22,7 @@ public plugins for RPGMakerMV / MZ
 | ---- | ---- | :--: | :--: |
 | EventInterfaceCore | 事件接口核心 | √ | √ |
 | AudioWaveView | 音频波形可视化 | √ | √ |
-| CustomizablePluginCmd | 自定义插件指令 | √ | √ |
+| [CustomizablePluginCmd](plugins/CustomizablePluginCmd) | 自定义插件指令 | √ | √ |
 | TextManagerEx | 文本管理方案+多语言方案 | √ | √ |
 | [CustomMenuCore](plugins/CustomMenuCore) | 自定义菜单核心 | √ | √ |
 
