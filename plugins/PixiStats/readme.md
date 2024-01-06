@@ -1,10 +1,10 @@
-# MKP_PixiStats <Pixi性能统计>
+# PixiStats <Pixi性能统计>
 
-包含并使用了 [stats.js](https://github.com/mrdoob/stats.js)
-包含并使用了 [gstatsjs](https://github.com/eXponenta/gstatsjs)
-取代了 RM 自带的性能监测工具 fpsmeter (MV) 或 FPSCounter (MZ)
+包含并使用了 [stats.js](https://github.com/mrdoob/stats.js)  
+包含并使用了 [gstatsjs](https://github.com/eXponenta/gstatsjs)  
+取代了 RM 自带的性能监测工具 fpsmeter (MV) 或 FPSCounter (MZ)  
 
-This class provides an info box that will help you monitor your code performance.
+This class provides an info box that will help you monitor your code performance.  
 + stats.js
   - FPS Frames rendered in the last second. The higher the number the better.
   - MS Milliseconds needed to render a frame. The lower the number the better.
@@ -13,11 +13,14 @@ This class provides an info box that will help you monitor your code performance
   - DC Draw Calls made within one frame.
   - TC Texture Count used within one frame.
 
+**注意**  
+因为使用了 GPL-3.0协议的 [gstatsjs](https://github.com/eXponenta/gstatsjs)  
+所以该插件不是MIT协议，而是GPL-3.0协议  
 
 ## 使用方法
 
-按 Ctrl + F2 显示、切换、隐藏 监测画布
-按 Ctrl + Alt + F2 显示全部 监测画布
+按 Ctrl + F2 显示、切换、隐藏 监测画布  
+按 Ctrl + Alt + F2 显示全部 监测画布  
 
 
 ## 后续任务
