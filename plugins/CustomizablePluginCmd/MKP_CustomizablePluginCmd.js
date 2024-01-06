@@ -1,6 +1,6 @@
 /*!
  * MKP_CustomizablePluginCmd - v0.2.1
- * Updated : 2024-01-06T19:32:00+0800
+ * Updated : 2024-01-06T20:04:00+0800
  * 
  * https://github.com/MikanHako1024
  * Copyright (C) 2019-2024 Mikan(MikanHako)
@@ -22,7 +22,7 @@
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024
  * @version 
- *   v0.2.1 (2024-01-06T19:32:00+0800) 
+ *   v0.2.1 (2024-01-06T20:04:00+0800) 
  *     更新插件模板
  *   v0.2.0 (2023-04-11T01:55:00+0800) 
  *     增加 转换插件指令中控制字符的功能
@@ -42,7 +42,7 @@
  * @help
  * 
  * 自定义插件指令 <MKP_CustomizablePluginCmd> v0.2.1
- * Updated : 2024-01-06T19:32:00+0800
+ * Updated : 2024-01-06T20:04:00+0800
  * 
  * 
  * ## 简要说明
@@ -207,7 +207,7 @@ var MK_PluginData = MK_PluginData || {};
 		MikanPluginDataCoreUpdatedTime : '2024-01-01T013:00:00+0800',
 		pluginName : 'MKP_CustomizablePluginCmd',
 		pluginVersion : 'v0.2.1',
-		pluginUpdatedTime : '2024-01-06T19:32:00+0800',
+		pluginUpdatedTime : '2024-01-06T20:04:00+0800',
 
 		support : {
 			supportForMV : true,
@@ -413,7 +413,7 @@ var MK_PluginData = MK_PluginData || {};
 
 ;(function() {
 	// param
-	const pluginData = MK_PluginData['插件文件名'];
+	const pluginData = MK_PluginData['MKP_CustomizablePluginCmd'];
 
 	const paramParser = pluginData.paramParser;
 
