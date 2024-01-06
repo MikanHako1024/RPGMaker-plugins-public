@@ -1,16 +1,16 @@
 # CustomizablePluginCmd <自定义插件指令>
 
-[自定义插件指令]  
+**自定义插件指令**  
 本插件可以自定义插件指令  
 自定义插件指令会将参数设置到变量，并执行公共事件  
 
-[插件指令变量参数]  
+**插件指令变量参数**  
 在一条插件指令前加上`ConvertCmd`  
 可以将插件指令中的 \V,\N 等控制字符转换成对应的值  
 详见【插件指令】  
 (需要将本插件置于插件管理器列表的末位)  
 
-[MZ执行MV的插件指令]  
+**MZ执行MV的插件指令**  
 MZ中使用【插件指令】-【插件指令MV】 还可以执行MV的插件指令  
 (不保证 MV的插件一定兼容MZ)  
 
@@ -68,4 +68,4 @@ Ps:不会重新切分参数
 
 ## Author
 Mikan(MikanHako)  
-Copyright (C) 2024 Mikan(MikanHako)  
+Copyright (C) 2023-2024 Mikan(MikanHako)  
