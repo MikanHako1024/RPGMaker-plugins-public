@@ -24,7 +24,7 @@ public plugins for RPGMakerMV / MZ
 | AudioWaveView | 音频波形可视化 | √ | √ |
 | CustomizablePluginCmd | 自定义插件指令 | √ | √ |
 | TextManagerEx | 文本管理方案+多语言方案 | √ | √ |
-| CustomMenuCore | 自定义菜单核心 | √ | √ |
+| [CustomMenuCore](plugins/CustomMenuCore) | 自定义菜单核心 | √ | √ |
 
 #### 优化
 | Plugin | Desc | MV | MZ |

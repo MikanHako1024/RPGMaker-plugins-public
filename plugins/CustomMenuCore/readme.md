@@ -1,6 +1,6 @@
 # CustomMenuCore <自定义菜单核心>
 
-用json配置生成UI
+用json配置生成UI  
 
 
 ## 使用方法
