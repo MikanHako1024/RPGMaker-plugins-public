@@ -1,51 +1,75 @@
-// ================================================================
-// MKP_TextSprite.js
-// 文本精灵
-// ================================================================
-//  author : Mikan(MikanHako)
-//  plugin : MKP_TextSprite.js 文本精灵
-// version : v0.2.3 2021/08/21 增加绘制圆的方法、增加移除文字精灵的方法
-// ----------------------------------------------------------------
-// [Twitter] https://twitter.com/_MikanHako/
-// -[GitHub] https://github.com/MikanHako1024/
-// ---[Blog] Coming soon
-// -----[QQ] 312859582
-// ================================================================
-// MIT License
-// Copyright (C) 2020-2021 Mikan(MikanHako)
-// http://opensource.org/licenses/mit-license.php
-// ================================================================
-
-
+/*!
+ * MKP_TextSprite - v0.2.4
+ * Updated : 2024-02-19T04:11:00+0800
+ * 
+ * MIT License
+ * 
+ * Copyright (C) 2019-2024 Mikan(MikanHako)
+ * https://github.com/MikanHako1024
+ * 
+ * Released under the MIT License.
+ * http://opensource.org/licenses/mit-license.php
+ */
 
 
 /*:
- * @plugindesc 文本精灵 <MKP_TextSprite>
+ * ================================================================
+ * [Twitter] https://twitter.com/_MikanHako/
+ * -[GitHub] https://github.com/MikanHako1024/
+ * ---[Blog] Coming soon
+ * -----[QQ] 312859582
+ * ================================================================
+ * 
+ * @plugindesc 文本精灵 <MKP_TextSprite> v0.2.4
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
- *   v0.2.3.branch1 2021/08/22 更新插件说明
- *   v0.2.3 2021/08/21 增加绘制圆的方法、增加移除文字精灵的方法
- *   v0.2.2 2021/08/19 增加绘制图标的字母精灵
- *   v0.2.1 2021/08/18 调整字母对象框架、修复部分问题
- *     字母对象记录绘制位置和textState
- *     增加按某一动画code筛选字母对象的方法
- *     绘制时考虑文字外线
- *   v0.2.0-alpha 2021/08/18 更新框架 : TextSprite解耦
- *   v0.1.2.branch1 2021/08/17 清理冗余注释
- *   v0.1.2 2021/08/17 更新MKP_SpriteAnimManager的框架 相应地更新插件说明
- *   v0.1.1 2021/08/16 更新插件说明及规约
- *   v0.1.0.fix1 2020/11/14 修复绘制文字不会同步字体的问题
- *   v0.1.0 2020/11/11 完成基本框架和功能的demo
- *     把最初的MK_AnimatedMessage分成了MK_SpriteAnimManager和MK_TextSprite
- *   v0.0.0 2020/08/20 项目计划中
+ *   v0.2.4 (2024-02-19T04:11:00+0800)
+ *     更新插件模板
+ *     增加对 MZ 的支持
+ *     插件说明中 控制字符部分 移动到 MKP_SpriteAnimManager
+ *   v0.2.3.branch1 (2021-08-22T00:00:00+0800)
+ *     更新插件说明
+ *   v0.2.3 (2021-08-21T00:00:00+0800)
+ *     增加绘制圆的方法、增加移除文字精灵的方法
+ *   v0.2.2 (2021-08-19T00:00:00+0800)
+ *     增加绘制图标的字母精灵
+ *   v0.2.1 (2021-08-18T00:00:00+0800)
+ *     调整字母对象框架、修复部分问题
+ *       字母对象记录绘制位置和textState
+ *       增加按某一动画code筛选字母对象的方法
+ *       绘制时考虑文字外线
+ *   v0.2.0-alpha (2021-08-18T00:00:00+0800)
+ *     更新框架 : TextSprite解耦
+ *   v0.1.2.branch1 (2021-08-17T00:00:00+0800)
+ *     清理冗余注释
+ *   v0.1.2 (2021-08-17T00:00:00+0800)
+ *     更新MKP_SpriteAnimManager的框架 相应地更新插件说明
+ *   v0.1.1 (2021-08-16T00:00:00+0800)
+ *     更新插件说明及规约
+ *   v0.1.0.fix1 (2020-11-14T00:00:00+0800)
+ *     修复绘制文字不会同步字体的问题
+ *   v0.1.0 (2020-11-11T00:00:00+0800)
+ *     完成基本框架和功能的demo
+ *       把最初的MK_AnimatedMessage分成了MK_SpriteAnimManager和MK_TextSprite
+ *   v0.0.0 (2020-08-20T00:00:00+0800) Init File
+ *     项目计划中
+ * 
+ * @sourcecode 发布版插件可能压缩了代码，如有需要源代码，可以联系插件作者
  * 
  * 
+ * 
+ * 
+ * @target MV MZ
+ * 
+ * @orderBefore MKP_SpriteAnimationSet
+ * @orderBefore MKP_SpriteAnimManager
  * 
  * 
  * @help
  * 
- * 文本精灵 <MKP_TextSprite>
+ * 文本精灵 <MKP_TextSprite> v0.2.4
+ * Updated : 2024-02-19T04:11:00+0800
  * 
  * 
  * ## 简要说明
@@ -58,10 +82,7 @@
  * + 插件`MKP_SpriteAnimManager`
  *   - 用于设置动画和动画参数、处理消息框文字播放动画等
  * 
- * 首先对动画进行配置，详细操作见 插件【MKP_SpriteAnimManager】  
- * 之后在编辑消息时，使用特殊字串触发一些播放动画的操作，
- * 如：创建动画、播放动画、暂停动画 等  
- * 详见 【使用方法】  
+ * 本插件只提供前置基础  
  * 
  * 
  * ## 使用方法
@@ -71,117 +92,12 @@
  * + MKP_SpriteAnimationSet
  * + MKP_SpriteAnimManager
  * 
- * 在【显示文本】之前，需要设置动画，详见 插件【MKP_SpriteAnimManager】  
- * 之后在【显示文本】里编辑消息时，使用控制字符触发操作，详见 【控制字符】  
  * 
+ * ## 版本支持
  * 
- * ## 控制字符
- * 
- * 在编辑消息文本时，可以使用类似 `\ABC` 或 `\ABC[123]` 的控制字符。  
- * 控制字符 可以用来 执行操作 或 显示特殊内容。  
- * 显示文本时，文字将会顺序显示，当到达控制字符时，将会执行对应操作或显示对应内容。  
- * 控制字符不区分大小写，参数只能使用数字  
- * 
- * | description | symbol          | param |
- * | :---------- | :-------------- | :---- |
- * | 创建动画     | `\TEXTANIM[..]` | 动画id |
- * | 播放动画     | `\TAPLAY[..]`   | 动画id |
- * | 停止动画(未完成)     | `\TASTOP[..]`   | 动画id |
- * | 暂停动画(未完成)     | `\TAPAUSE[..]`  | 动画id |
- * | 继续动画(未完成)     | `\TACONT[..]`   | 动画id |
- * | 开始添加文本(未完成) | `\TAADDON[..]`  | 动画id |
- * | 停止添加文本(未完成) | `\TAADDOFF[..]` | 动画id |
- * 
- * #### 创建动画
- * 为文本创建一个动画  
- * 显示文字进行到该控制字符时，将会创建动画  
- * 创建动画后，动画会开始准备，但不会直接播放  
- * TEXTANIM : text animation  
- * 
- * * `\TEXTANIM[..]`
- * + 参数
- *   - 动画id
- * 
- * #### 播放动画
- * 播放指定动画(创建动画后不会自动播放)  
- * TAPLAY : text animtion play  
- * 
- * * `\TAPLAY[..]`
- * + 参数
- *   - 动画id
- * 
- * #### 停止动画
- * 停止指定动画  
- * TAPAUSE : text animtion stop  
- * 
- * * `\TASTOP[..]`
- * + 参数
- *   - 动画id
- * 
- * #### 暂停动画
- * 暂停指定动画  
- * TACONT : text animtion pause  
- * 
- * * `\TAPAUSE[..]`
- * + 参数
- *   - 动画id
- * 
- * #### 继续动画
- * 继续指定动画  
- * TASTOP : text animtion continue  
- * 
- * * `\TACONT[..]`
- * + 参数
- *   - 动画id
- * 
- * #### 开始添加文本
- * 关闭指定动画添加文本  
- * TAADDOFF : text animtion add on  
- * 
- * * `\TAADDON[..]`
- * + 参数
- *   - 动画id
- * 
- * #### 停止添加文本
- * 开启指定动画添加文本(默认开启)  
- * TAADDOFF : text animtion add off  
- * 
- * * `\TAADDOFF[..]`
- * + 参数
- *   - 动画id
- * 
- * 
- * ## 其他说明
- * 
- * #### 动画列表，详细说明和参数见插件【MKP_SpriteAnimationSet】
- * 注 : id 为 默认动画id  
- * | id | 动画效果 |
- * | :- | :------- |
- * |  2 | 淡入淡出 |
- * |  3 | 缩放     |
- * |  4 | 翻转     |
- * |  5 | 上下出现(未完成) |
- * |  6 | 震动     |
- * |  7 | 剧烈缩放 |
- * |  8 | 波浪缩放 |
- * |  9 | 旋涡     |
- * | 10 | 摇晃     |
- * | 11 | 随机     |
- * | 32 | 卡拉Ok   |
- * | 52 | 文字居中 |
- * 
- * 
- * ## 使用示例
- * 
- * #### 让一段文字同时淡入显示
- * 配置动画id=101为基础动画id=1  
- * 在【显示文本】中编辑 : `\TextAnim[101]\>我是一段文字\TAplay[101]`  
- * 
- * 说明 :  
- * 首先创建动画，使得之后的文字能被动画识别 : `\TextAnim[101]`  
- * 文字需要同时显示，所以需要开启快速显示模式 : `\>`  
- * 之后输入需要的文字  
- * 最后开启动画，使得文字同时进行动画 : `\TAplay[101]`  
+ * 开发环境 : RPG Maker MV v1.6.2 + RPG Maker MZ v1.8.0
+ * + MV : 支持
+ * + MZ : 支持
  * 
  * 
  * ## 后续任务
@@ -201,10 +117,16 @@
  * ---[Blog] Coming soon  
  * -----[QQ] 312859582  
  * 
+ * 我的公开插件仓库:  
+ * https://github.com/MikanHako1024/RPGMaker-plugins-public  
+ * 
+ * 如需在鸣谢名单中显示插件作者名，可以显示此ID :  
+ * Mikan(MikanHako)  
+ * 
  * 
  * ## 使用规约
  * MIT License  
- * Copyright (C) 2020-2021 Mikan(MikanHako)  
+ * Copyright (C) 2019-2024 Mikan(MikanHako)  
  * http://opensource.org/licenses/mit-license.php  
  * 
  * 本插件使用 MIT协议  
@@ -217,138 +139,437 @@
  * --------------------------------
  * ENDLINE
  * 
+ * 
+ * 
+ * 
+ * @param ---- startline ----
+ * 
+ * @param ---- endline ----
+ * 
  */
 
-function MK_TextBitmap() {
-    this.initialize.apply(this, arguments);
-}
 
-function MK_TextSprite() {
-    this.initialize.apply(this, arguments);
-}
+"use strict";
 
-MK_TextBitmap.prototype = Object.create(Bitmap.prototype), (MK_TextBitmap.prototype.constructor = MK_TextBitmap).prototype.initialize = function(t, e) {
-    Bitmap.prototype.initialize.apply(this, arguments), this._textSprite = null, this._textMode = !1;
-}, MK_TextBitmap.prototype.setTextSprite = function(t) {
-    this._textSprite = t;
-}, MK_TextBitmap.prototype.textModeOn = function() {
-    this._textMode = !0;
-}, MK_TextBitmap.prototype.textModeOff = function() {
-    this._textMode = !1;
-}, MK_TextBitmap.prototype.needTextMode = function() {
-    return this._textMode && this._textSprite;
-}, MK_TextBitmap.prototype.drawText = function(t, e, i, r, p, o) {
-    var a, n, s, x, h;
-    this.needTextMode() ? (a = this.measureTextWidthWithOutline(t), n = new Bitmap(a.width + a.offsetWidth, p + a.offsetHeight), 
-    (s = new Sprite(n)).x = e + a.offsetX, s.y = i + a.offsetY, x = this._canvas, h = this._context, 
-    this.__canvas = n._canvas, this.__context = n._context, this.textModeOff(), Bitmap.prototype.drawText.call(this, t, -a.offsetX, -a.offsetY, r, p, o), 
-    this.textModeOn(), this.__canvas = x, this.__context = h, this._textSprite.addLetterSprite(s, t, e, i, s.x, s.y)) : Bitmap.prototype.drawText.apply(this, arguments);
-}, MK_TextBitmap.prototype.blt = function(t, e, i, r, p, o, a, n, s) {
-    var x, h, l, _;
-    this.needTextMode() ? (n = n || r, s = s || p, x = new Bitmap(n, s), (h = new Sprite(x)).x = o, 
-    h.y = a, l = this._canvas, _ = this._context, this.__canvas = x._canvas, this.__context = x._context, 
-    this.textModeOff(), Bitmap.prototype.blt.call(this, t, e, i, r, p, 0, 0, n, s), 
-    this.textModeOn(), this.__canvas = l, this.__context = _, this._textSprite.addLetterSprite(h, "", o, a, h.x, h.y)) : Bitmap.prototype.drawText.apply(this, arguments);
-}, MK_TextBitmap.prototype.drawCircle = function(t, e, i, r) {
-    var p, o;
-    this.needTextMode() ? (p = new Bitmap(2 * i, 2 * i), (o = new Sprite(p)).x = t - i, 
-    o.y = e - i, p.drawCircle(i, i, i, r), this._textSprite.addLetterSprite(o, "", t, e, o.x, o.y)) : Bitmap.prototype.drawCircle.apply(this, arguments);
-}, MK_TextBitmap.prototype.clearTextSprite = function() {
-    this._textSprite.clearLetters();
-}, MK_TextBitmap.prototype.clear = function() {
-    Bitmap.prototype.clear.apply(this, arguments), this.clearTextSprite();
-}, MK_TextBitmap.prototype.measureTextWidthWithOutline = function(t) {
-    var e = this.outlineWidth + this._context.shadowBlur;
-    return {
-        offsetX: -e / 2,
-        offsetY: -e / 2,
-        offsetWidth: e,
-        offsetHeight: e,
-        width: this.measureTextWidth(t)
-    };
-}, MK_TextSprite.prototype = Object.create(Sprite.prototype), (MK_TextSprite.prototype.constructor = MK_TextSprite).prototype.initialize = function() {
-    Sprite.prototype.initialize.apply(this, arguments), this.clearAll();
-}, MK_TextSprite.prototype.clearAll = function() {
-    this.initLetterList(), this.clearAllFlag(), this._msgWindow = null;
-}, MK_TextSprite.prototype.initLetterList = function() {
-    this._letters = [];
-}, MK_TextSprite.prototype.clearLetters = function() {
-    this._letters = [], this.removeChildren();
-}, MK_TextSprite.prototype.onClearLetters = function() {}, MK_TextSprite.prototype.makeNewLetterData = function(t, e, i, r, p, o) {
-    return {
-        spriteData: {
-            text: e || "",
-            drawX: void 0 === i ? t.x : i,
-            drawY: void 0 === r ? t.y : r,
-            x: void 0 === p ? t.x : p,
-            y: void 0 === o ? t.y : o,
-            width: t.width,
-            height: t.height
-        },
-        textState: Object.assign({}, this._msgWindow ? this._msgWindow._textState : {})
-    };
-}, MK_TextSprite.prototype.createLetterObject = function(t) {
-    return {
-        sprite: t,
-        flag: Object.assign({}, this._newLetterFlag),
-        data: this.makeNewLetterData(...arguments)
-    };
-}, MK_TextSprite.prototype.addLetterSprite = function(t, e, i, r, p, o) {
-    var a;
-    t && (a = this.createLetterObject(...arguments), this._letters.push(a), this.addChild(t), 
-    this.onAddLetterSprite(a));
-}, MK_TextSprite.prototype.onAddLetterSprite = function(t) {}, MK_TextSprite.prototype.removeLetterSprite = function(e) {
-    var t, i = this._letters.findIndex(t => t && t.sprite === e);
-    0 <= i && (t = this._letters[i], this._letters.splice(i, 1), this.removeSprite(e), 
-    this.onRemoveLetterSprite(t));
-}, MK_TextSprite.prototype.onRemoveLetterSprite = function(t) {}, MK_TextSprite.prototype.clearNewLetterFlag = function() {
-    this._newLetterFlag = {};
-}, MK_TextSprite.prototype.clearTextSpriteFlag = function() {
-    this._textSpriteFlag = {};
-}, MK_TextSprite.prototype.clearTextSpriteData = function() {
-    this._textSpriteData = {};
-}, MK_TextSprite.prototype.clearAllFlag = function() {
-    this.clearNewLetterFlag(), this.clearTextSpriteFlag(), this.clearTextSpriteData();
-}, MK_TextSprite.prototype.setNewLetterFlag = function(t, e) {
-    this._newLetterFlag[t] = void 0 === e || !!e;
-}, MK_TextSprite.prototype.setTextSpriteFlag = function(t, e) {
-    this._textSpriteFlag[t] = void 0 === e || !!e;
-}, MK_TextSprite.prototype.setTextSpriteData = function(t, e) {
-    this._textSpriteData[t] = e;
-}, MK_TextSprite.prototype.animFlagFormat = function(t, e) {
-    return t + "_" + e;
-}, MK_TextSprite.prototype.setNewLetterAnimFlag = function(t, e, i) {
-    this.setNewLetterFlag(this.animFlagFormat(t, e), i);
-}, MK_TextSprite.prototype.setTextSpriteAnimFlag = function(t, e, i) {
-    this.setTextSpriteFlag(this.animFlagFormat(t, e), i);
-}, MK_TextSprite.prototype.setTextSpriteAnimData = function(t, e, i) {
-    this.setTextSpriteData(this.animFlagFormat(t, e), i);
-}, MK_TextSprite.prototype.getLetterFlag = function(t, e) {
-    return !(!t || !t.flag) && t.flag[e];
-}, MK_TextSprite.prototype.getTextSpriteFlag = function(t) {
-    return this._textSpriteFlag[t];
-}, MK_TextSprite.prototype.getTextSpriteData = function(t) {
-    return this._textSpriteData[t];
-}, MK_TextSprite.prototype.getLetterAnimFlag = function(t, e, i) {
-    return !(!t || !t.flag) && t.flag[this.animFlagFormat(e, i)];
-}, MK_TextSprite.prototype.getTextSpriteAnimFlag = function(t, e) {
-    return this.getTextSpriteFlag(this.animFlagFormat(t, e));
-}, MK_TextSprite.prototype.getTextSpriteAnimData = function(t, e) {
-    return this.getTextSpriteData(this.animFlagFormat(t, e));
-}, MK_TextSprite.prototype.getLetterObjects = function() {
-    return this._letters;
-}, MK_TextSprite.prototype.getLetterSprites = function() {
-    return this.getLetterObjects().map(t => t.sprite);
-}, MK_TextSprite.prototype.filterLetterObjects = function(r, p) {
-    return this.getLetterObjects().filter(t => {
-        if (r) for (var e = 0, i = (r = Array.isArray(r) ? r : [ r ]).length; e < i; e++) if (!t.flag[r[e]]) return !1;
-        if (p) for (e = 0, i = (p = Array.isArray(p) ? p : [ p ]).length; e < i; e++) if (t.flag[p[e]]) return !1;
-        return !0;
-    });
-}, MK_TextSprite.prototype.filterLetterObjectsByAnimFlag = function(e, t, i) {
-    return t = t && (Array.isArray(t) ? t : [ t ]).map(t => this.animFlagFormat(t, e), this), 
-    i = i && (Array.isArray(i) ? i : [ i ]).map(t => this.animFlagFormat(t, e), this), 
-    this.filterLetterObjects(e, t, i);
-}, MK_TextSprite.prototype.setMsgWindow = function(t) {
-    this._msgWindow = t;
-};
+var MK_PluginData = MK_PluginData || {};
+
+(function() {
+	const pluginData = {
+		MikanPluginDataCoreUpdatedTime: "2024-01-01T013:00:00+0800",
+		pluginName: "MKP_TextSprite",
+		pluginVersion: "v0.2.4",
+		pluginUpdatedTime: "2024-02-19T04:11:00+0800",
+		support: {
+			supportForMV: true,
+			notSupportForMV: false,
+			engineNameMV: "MV",
+			engineVersionMV: "1.6.2",
+			supportForMZ: true,
+			notSupportForMZ: false,
+			engineNameMZ: "MZ",
+			engineVersionMZ: "1.8.0"
+		},
+		paramParser: {
+			numberParser: function(str, defVal) {
+				if (str === "") return defVal;
+				if (typeof str !== "string" && typeof str !== "number") return defVal;
+				var val = Number(str);
+				return !Number.isNaN(val) ? val : defVal;
+			},
+			stringParser: function(str, defVal) {
+				if (typeof str !== "string" && typeof str !== "number") return defVal;
+				return String(str);
+			},
+			booleanParser: function(str, defVal) {
+				if (str === "true") return true; else if (str === "false") return false; else return !!defVal;
+			},
+			structParser: function(str) {
+				var data = null;
+				try {
+					data = JSON.parse(str || "{}");
+				} catch (e) {
+					console.warn(`Failed to parse json "${str}".`);
+					data = null;
+				}
+				return data;
+			},
+			listParser: function(parser, str, defVals, ...args) {
+				var data = null;
+				try {
+					data = JSON.parse(str || "[]");
+				} catch (e) {
+					console.warn(`Failed to parse json "${str}".`);
+					data = null;
+				}
+				if (Array.isArray(data)) {
+					data = Array.isArray(defVals) ? data.map((each, i) => parser(each, defVals[i], ...args)) : data.map(each => parser(each, defVals, ...args));
+				} else {
+					console.warn(`Json data "${str}" is not a array data.`);
+					data = null;
+				}
+				return data;
+			}
+		},
+		paramSource: null,
+		param: {},
+		class: {},
+		datas: {},
+		getRealPluginName: function(pluginName) {
+			var param = PluginManager._parameters[(pluginName || "").toLowerCase()];
+			if (!param) {
+				var list = $plugins.filter(function(i) {
+					return i.description.contains("<" + pluginName + ">");
+				});
+				for (var i = 0, l = list.length; i < l; ++i) {
+					var realPluginName = list[i].name;
+					if (realPluginName !== pluginName) return realPluginName;
+				}
+				return "";
+			} else {
+				return pluginName;
+			}
+		},
+		fetchMyRealPluginName: function() {
+			if (!this.realPluginName) {
+				var realPluginName = this.getRealPluginName(this.pluginName);
+				if (!realPluginName) {
+					console.warn(`Don't found real plugin name by plugin name "${this.pluginName}".`);
+					realPluginName = this.pluginName;
+				}
+				this.realPluginName = realPluginName;
+			}
+			return this.realPluginName;
+		},
+		getPluginParam: function(realPluginName) {
+			var param = PluginManager.parameters(realPluginName);
+			return param;
+		},
+		fetchMyPluginParam: function() {
+			this.paramSource = this.getPluginParam(this.fetchMyRealPluginName());
+			return this.paramSource;
+		},
+		checkRpgmakerEngine: function(name, version) {
+			return !!Utils && (name || Utils.RPGMAKER_NAME) === Utils.RPGMAKER_NAME && (version || Utils.RPGMAKER_VERSION) === Utils.RPGMAKER_VERSION;
+		},
+		calRpgmakerEngine: function() {
+			const EngineSupport = this.support;
+			const PLUGIN_NAME = this.pluginName;
+			const keyNone = "";
+			const keyMV = "MV";
+			const keyMZ = "MZ";
+			if (!Utils) {
+				console.error(`Load plugin "${PLUGIN_NAME}" failed, not found "Utils".`);
+				return keyNone;
+			} else if (this.checkRpgmakerEngine(keyMV, undefined)) {
+				if (EngineSupport.notSupportForMV) {
+					console.error(`Plugin "${PLUGIN_NAME}" don't support for "RPG Maker ${Utils.RPGMAKER_NAME}".`);
+					return keyNone;
+				} else if (!EngineSupport.supportForMV) {
+					console.warn(`Maybe plugin "${PLUGIN_NAME}" don't support for "RPG Maker ${Utils.RPGMAKER_NAME}".`);
+					return keyMV;
+				} else {
+					return keyMV;
+				}
+			} else if (this.checkRpgmakerEngine(keyMZ, undefined)) {
+				if (EngineSupport.notSupportForMZ) {
+					console.error(`Plugin "${PLUGIN_NAME}" don't support for "RPG Maker ${Utils.RPGMAKER_NAME}".`);
+					return keyNone;
+				} else if (!EngineSupport.supportForMZ) {
+					console.warn(`Maybe plugin "${PLUGIN_NAME}" don't support for "RPG Maker ${Utils.RPGMAKER_NAME}".`);
+					return keyMZ;
+				} else {
+					return keyMZ;
+				}
+			} else {
+				console.error(`Plugin "${PLUGIN_NAME}" don't support for unknown engine "RPG Maker ${Utils.RPGMAKER_NAME}".`);
+				return keyNone;
+			}
+		},
+		currentRpgmakerEngine: undefined,
+		getRpgmakerEngine: function() {
+			if (this.currentRpgmakerEngine === undefined) {
+				try {
+					this.currentRpgmakerEngine = this.calRpgmakerEngine();
+				} catch (e) {
+					console.warn(`Calculate rpgmaker engine failed.\n${e}`);
+					this.currentRpgmakerEngine = "";
+				}
+			}
+			return this.currentRpgmakerEngine;
+		}
+	};
+	MK_PluginData[pluginData.pluginName] = pluginData;
+})();
+
+(function() {
+	const PLUGIN_NAME = "MKP_TextSprite";
+	const PLUGIN_PARAMS = function() {
+		const pluginData = MK_PluginData[PLUGIN_NAME];
+		const param = pluginData.param;
+		return Object.assign({}, param);
+	}();
+	const CURRENT_ENGINE = function() {
+		const pluginData = MK_PluginData[PLUGIN_NAME];
+		return pluginData.getRpgmakerEngine();
+	}();
+	(function() {
+		function MK_TextBitmap() {
+			this.initialize.apply(this, arguments);
+		}
+		MK_TextBitmap.prototype = Object.create(Bitmap.prototype);
+		MK_TextBitmap.prototype.constructor = MK_TextBitmap;
+		MK_TextBitmap.prototype.initialize = function(width, height) {
+			Bitmap.prototype.initialize.apply(this, arguments);
+			this._textSprite = null;
+			this._textMode = false;
+		};
+		MK_TextBitmap.prototype.setTextSprite = function(sprite) {
+			this._textSprite = sprite;
+		};
+		MK_TextBitmap.prototype.textModeOn = function() {
+			this._textMode = true;
+		};
+		MK_TextBitmap.prototype.textModeOff = function() {
+			this._textMode = false;
+		};
+		MK_TextBitmap.prototype.needTextMode = function() {
+			return this._textMode && this._textSprite;
+		};
+		if (CURRENT_ENGINE === "MV") {
+			MK_TextBitmap._bitmapCanvasKey = "__canvas";
+			MK_TextBitmap._bitmapContextKey = "__context";
+		} else {
+			MK_TextBitmap._bitmapCanvasKey = "_canvas";
+			MK_TextBitmap._bitmapContextKey = "_context";
+		}
+		MK_TextBitmap.prototype.drawText = function(text, drawX, drawY, maxWidth, lineHeight, align) {
+			if (this.needTextMode()) {
+				var textMetrics = this.measureTextWidthWithOutline(text);
+				var bitmap = new Bitmap(textMetrics.width + textMetrics.offsetWidth, lineHeight + textMetrics.offsetHeight);
+				var sprite = new Sprite(bitmap);
+				sprite.x = drawX + textMetrics.offsetX;
+				sprite.y = drawY + textMetrics.offsetY;
+				var canvas;
+				var context;
+				var canvas = this[MK_TextBitmap._bitmapCanvasKey];
+				var context = this[MK_TextBitmap._bitmapContextKey];
+				this[MK_TextBitmap._bitmapCanvasKey] = bitmap[MK_TextBitmap._bitmapCanvasKey];
+				this[MK_TextBitmap._bitmapContextKey] = bitmap[MK_TextBitmap._bitmapContextKey];
+				this.textModeOff();
+				Bitmap.prototype.drawText.call(this, text, -textMetrics.offsetX, -textMetrics.offsetY, maxWidth, lineHeight, align);
+				this.textModeOn();
+				this[MK_TextBitmap._bitmapCanvasKey] = canvas;
+				this[MK_TextBitmap._bitmapContextKey] = context;
+				this._textSprite.addLetterSprite(sprite, text, drawX, drawY, sprite.x, sprite.y);
+			} else {
+				Bitmap.prototype.drawText.apply(this, arguments);
+			}
+		};
+		MK_TextBitmap.prototype.blt = function(source, sx, sy, sw, sh, drawX, drawY, dw, dh) {
+			if (this.needTextMode()) {
+				dw = dw || sw;
+				dh = dh || sh;
+				var bitmap = new Bitmap(dw, dh);
+				var sprite = new Sprite(bitmap);
+				sprite.x = drawX;
+				sprite.y = drawY;
+				var canvas = this._canvas;
+				var context = this._context;
+				this.__canvas = bitmap._canvas;
+				this.__context = bitmap._context;
+				this.textModeOff();
+				Bitmap.prototype.blt.call(this, source, sx, sy, sw, sh, 0, 0, dw, dh);
+				this.textModeOn();
+				this.__canvas = canvas;
+				this.__context = context;
+				this._textSprite.addLetterSprite(sprite, "", drawX, drawY, sprite.x, sprite.y);
+			} else {
+				Bitmap.prototype.drawText.apply(this, arguments);
+			}
+		};
+		MK_TextBitmap.prototype.drawCircle = function(drawX, drawY, radius, color) {
+			if (this.needTextMode()) {
+				var bitmap = new Bitmap(radius * 2, radius * 2);
+				var sprite = new Sprite(bitmap);
+				sprite.x = drawX - radius;
+				sprite.y = drawY - radius;
+				bitmap.drawCircle(radius, radius, radius, color);
+				this._textSprite.addLetterSprite(sprite, "", drawX, drawY, sprite.x, sprite.y);
+			} else {
+				Bitmap.prototype.drawCircle.apply(this, arguments);
+			}
+		};
+		MK_TextBitmap.prototype.clearTextSprite = function() {
+			this._textSprite.clearLetters();
+		};
+		MK_TextBitmap.prototype.clear = function() {
+			Bitmap.prototype.clear.apply(this, arguments);
+			this.clearTextSprite();
+		};
+		MK_TextBitmap.prototype.measureTextWidthWithOutline = function(text) {
+			var lineWidth = this.outlineWidth;
+			var shadowBlur = this._context.shadowBlur;
+			var width = this.measureTextWidth(text);
+			var padding = lineWidth + shadowBlur;
+			return {
+				offsetX: -padding / 2,
+				offsetY: -padding / 2,
+				offsetWidth: padding,
+				offsetHeight: padding,
+				width: width
+			};
+		};
+		window.MK_TextBitmap = MK_TextBitmap;
+		return MK_TextBitmap;
+	})();
+	(function() {
+		function MK_TextSprite() {
+			this.initialize.apply(this, arguments);
+		}
+		MK_TextSprite.prototype = Object.create(Sprite.prototype);
+		MK_TextSprite.prototype.constructor = MK_TextSprite;
+		MK_TextSprite.prototype.initialize = function() {
+			Sprite.prototype.initialize.apply(this, arguments);
+			this.clearAll();
+		};
+		MK_TextSprite.prototype.clearAll = function() {
+			this.initLetterList();
+			this.clearAllFlag();
+			this._msgWindow = null;
+		};
+		MK_TextSprite.prototype.initLetterList = function() {
+			this._letters = [];
+		};
+		MK_TextSprite.prototype.clearLetters = function() {
+			this._letters = [];
+			this.removeChildren();
+		};
+		MK_TextSprite.prototype.onClearLetters = function() {};
+		MK_TextSprite.prototype.makeNewLetterData = function(sprite, text, drawX, drawY, sx, sy) {
+			var data = {
+				spriteData: {
+					text: text || "",
+					drawX: drawX === undefined ? sprite.x : drawX,
+					drawY: drawY === undefined ? sprite.y : drawY,
+					x: sx === undefined ? sprite.x : sx,
+					y: sy === undefined ? sprite.y : sy,
+					width: sprite.width,
+					height: sprite.height
+				},
+				textState: Object.assign({}, this._msgWindow ? this._msgWindow._textState : {})
+			};
+			return data;
+		};
+		MK_TextSprite.prototype.createLetterObject = function(sprite) {
+			return {
+				sprite: sprite,
+				flag: Object.assign({}, this._newLetterFlag),
+				data: this.makeNewLetterData(...arguments)
+			};
+		};
+		MK_TextSprite.prototype.addLetterSprite = function(sprite, text, drawX, drawY, sx, sy) {
+			if (!sprite) return;
+			var letterObj = this.createLetterObject(...arguments);
+			this._letters.push(letterObj);
+			this.addChild(sprite);
+			this.onAddLetterSprite(letterObj);
+		};
+		MK_TextSprite.prototype.onAddLetterSprite = function(letterObj) {};
+		MK_TextSprite.prototype.removeLetterSprite = function(sprite) {
+			var letterObjIndex = this._letters.findIndex(each => each && each.sprite === sprite);
+			if (letterObjIndex >= 0) {
+				var letterObj = this._letters[letterObjIndex];
+				this._letters.splice(letterObjIndex, 1);
+				this.removeSprite(sprite);
+				this.onRemoveLetterSprite(letterObj);
+			}
+		};
+		MK_TextSprite.prototype.onRemoveLetterSprite = function(letterObj) {};
+		MK_TextSprite.prototype.clearNewLetterFlag = function() {
+			this._newLetterFlag = {};
+		};
+		MK_TextSprite.prototype.clearTextSpriteFlag = function() {
+			this._textSpriteFlag = {};
+		};
+		MK_TextSprite.prototype.clearTextSpriteData = function() {
+			this._textSpriteData = {};
+		};
+		MK_TextSprite.prototype.clearAllFlag = function() {
+			this.clearNewLetterFlag();
+			this.clearTextSpriteFlag();
+			this.clearTextSpriteData();
+		};
+		MK_TextSprite.prototype.setNewLetterFlag = function(key, value) {
+			this._newLetterFlag[key] = value === undefined ? true : !!value;
+		};
+		MK_TextSprite.prototype.setTextSpriteFlag = function(key, value) {
+			this._textSpriteFlag[key] = value === undefined ? true : !!value;
+		};
+		MK_TextSprite.prototype.setTextSpriteData = function(key, value) {
+			this._textSpriteData[key] = value;
+		};
+		MK_TextSprite.prototype.animFlagFormat = function(key, code) {
+			return key + "_" + code;
+		};
+		MK_TextSprite.prototype.setNewLetterAnimFlag = function(key, code, value) {
+			this.setNewLetterFlag(this.animFlagFormat(key, code), value);
+		};
+		MK_TextSprite.prototype.setTextSpriteAnimFlag = function(key, code, value) {
+			this.setTextSpriteFlag(this.animFlagFormat(key, code), value);
+		};
+		MK_TextSprite.prototype.setTextSpriteAnimData = function(key, code, value) {
+			this.setTextSpriteData(this.animFlagFormat(key, code), value);
+		};
+		MK_TextSprite.prototype.getLetterFlag = function(letter, key) {
+			return letter && letter.flag ? letter.flag[key] : false;
+		};
+		MK_TextSprite.prototype.getTextSpriteFlag = function(key) {
+			return this._textSpriteFlag[key];
+		};
+		MK_TextSprite.prototype.getTextSpriteData = function(key) {
+			return this._textSpriteData[key];
+		};
+		MK_TextSprite.prototype.getLetterAnimFlag = function(letter, key, code) {
+			return letter && letter.flag ? letter.flag[this.animFlagFormat(key, code)] : false;
+		};
+		MK_TextSprite.prototype.getTextSpriteAnimFlag = function(key, code) {
+			return this.getTextSpriteFlag(this.animFlagFormat(key, code));
+		};
+		MK_TextSprite.prototype.getTextSpriteAnimData = function(key, code) {
+			return this.getTextSpriteData(this.animFlagFormat(key, code));
+		};
+		MK_TextSprite.prototype.getLetterObjects = function() {
+			return this._letters;
+		};
+		MK_TextSprite.prototype.getLetterSprites = function() {
+			return this.getLetterObjects().map(obj => obj.sprite);
+		};
+		MK_TextSprite.prototype.filterLetterObjects = function(onFlags, offFlags) {
+			return this.getLetterObjects().filter(obj => {
+				if (!!onFlags) {
+					onFlags = Array.isArray(onFlags) ? onFlags : [ onFlags ];
+					for (var i = 0, l = onFlags.length; i < l; i++) {
+						if (!obj.flag[onFlags[i]]) return false;
+					}
+				}
+				if (!!offFlags) {
+					offFlags = Array.isArray(offFlags) ? offFlags : [ offFlags ];
+					for (var i = 0, l = offFlags.length; i < l; i++) {
+						if (!!obj.flag[offFlags[i]]) return false;
+					}
+				}
+				return true;
+			});
+		};
+		MK_TextSprite.prototype.filterLetterObjectsByAnimFlag = function(code, onKeys, offKeys) {
+			onKeys = !!onKeys ? (Array.isArray(onKeys) ? onKeys : [ onKeys ]).map(key => this.animFlagFormat(key, code), this) : onKeys;
+			offKeys = !!offKeys ? (Array.isArray(offKeys) ? offKeys : [ offKeys ]).map(key => this.animFlagFormat(key, code), this) : offKeys;
+			return this.filterLetterObjects(code, onKeys, offKeys);
+		};
+		MK_TextSprite.prototype.setMsgWindow = function(msgWindow) {
+			this._msgWindow = msgWindow;
+		};
+		window.MK_TextSprite = MK_TextSprite;
+		return MK_TextSprite;
+	})();
+})();
