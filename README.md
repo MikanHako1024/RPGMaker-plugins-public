@@ -10,7 +10,7 @@ public plugins for RPGMakerMV / MZ
 | ---- | ---- | :--: | :--: |
 | [ParallaxPicture](plugins/ParallaxPicture) | 视差图片 | √ | ? |
 | [PictureWithinMap](plugins/PictureWithinMap) | 图片置于地图内 | √ | ? |
-| [AnimatedMessage](plugins/AnimatedMessage) | 动画消息 | √ | ? |
+| [AnimatedMessage](plugins/AnimatedMessage) | 动画消息 | √ | √ |
 | [SceneDistort](plugins/SceneDistort) | 场景扭曲 | √ | ? |
 | Live2d-LipSync | Live2d-口型同步 | √ | √ |
 | TweenAnimCore | 补间动画核心 | √ | √ |
