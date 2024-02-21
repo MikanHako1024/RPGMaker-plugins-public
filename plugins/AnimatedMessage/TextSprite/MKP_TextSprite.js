@@ -1,6 +1,6 @@
 /*!
- * MKP_TextSprite - v0.2.4
- * Updated : 2024-02-19T04:11:00+0800
+ * MKP_TextSprite - v0.2.4.fix1
+ * Updated : 2024-02-21T15:07:00+0800
  * 
  * MIT License
  * 
@@ -20,10 +20,12 @@
  * -----[QQ] 312859582
  * ================================================================
  * 
- * @plugindesc 文本精灵 <MKP_TextSprite> v0.2.4
+ * @plugindesc 文本精灵 <MKP_TextSprite> v0.2.4.fix1
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024/RPGMaker-plugins-public
  * @version 
+ *   v0.2.4.fix1 (2024-02-21T15:07:00+0800)
+ *     对MZ的支持 补充修改 blt 方法
  *   v0.2.4 (2024-02-19T04:11:00+0800)
  *     更新插件模板
  *     增加对 MZ 的支持
@@ -68,8 +70,8 @@
  * 
  * @help
  * 
- * 文本精灵 <MKP_TextSprite> v0.2.4
- * Updated : 2024-02-19T04:11:00+0800
+ * 文本精灵 <MKP_TextSprite> v0.2.4.fix1
+ * Updated : 2024-02-21T15:07:00+0800
  * 
  * 
  * ## 简要说明
@@ -157,8 +159,8 @@ var MK_PluginData = MK_PluginData || {};
 	const pluginData = {
 		MikanPluginDataCoreUpdatedTime: "2024-01-01T013:00:00+0800",
 		pluginName: "MKP_TextSprite",
-		pluginVersion: "v0.2.4",
-		pluginUpdatedTime: "2024-02-19T04:11:00+0800",
+		pluginVersion: "v0.2.4.fix1",
+		pluginUpdatedTime: "2024-02-21T15:07:00+0800",
 		support: {
 			supportForMV: true,
 			notSupportForMV: false,
@@ -349,21 +351,25 @@ var MK_PluginData = MK_PluginData || {};
 				var sprite = new Sprite(bitmap);
 				sprite.x = drawX + textMetrics.offsetX;
 				sprite.y = drawY + textMetrics.offsetY;
-				var canvas;
-				var context;
-				var canvas = this[MK_TextBitmap._bitmapCanvasKey];
-				var context = this[MK_TextBitmap._bitmapContextKey];
-				this[MK_TextBitmap._bitmapCanvasKey] = bitmap[MK_TextBitmap._bitmapCanvasKey];
-				this[MK_TextBitmap._bitmapContextKey] = bitmap[MK_TextBitmap._bitmapContextKey];
-				this.textModeOff();
-				Bitmap.prototype.drawText.call(this, text, -textMetrics.offsetX, -textMetrics.offsetY, maxWidth, lineHeight, align);
-				this.textModeOn();
-				this[MK_TextBitmap._bitmapCanvasKey] = canvas;
-				this[MK_TextBitmap._bitmapContextKey] = context;
+				this.drawTextTo(bitmap, text, -textMetrics.offsetX, -textMetrics.offsetY, maxWidth, lineHeight, align);
 				this._textSprite.addLetterSprite(sprite, text, drawX, drawY, sprite.x, sprite.y);
 			} else {
 				Bitmap.prototype.drawText.apply(this, arguments);
 			}
+		};
+		MK_TextBitmap.prototype.drawTextTo = function(bitmap, ...args) {
+			const canvas = this[MK_TextBitmap._bitmapCanvasKey];
+			const context = this[MK_TextBitmap._bitmapContextKey];
+			this[MK_TextBitmap._bitmapCanvasKey] = bitmap[MK_TextBitmap._bitmapCanvasKey];
+			this[MK_TextBitmap._bitmapContextKey] = bitmap[MK_TextBitmap._bitmapContextKey];
+			const textMode = this._textMode;
+			this.textModeOff();
+			Bitmap.prototype.drawText.call(this, ...args);
+			if (textMode) {
+				this.textModeOn();
+			}
+			this[MK_TextBitmap._bitmapCanvasKey] = canvas;
+			this[MK_TextBitmap._bitmapContextKey] = context;
 		};
 		MK_TextBitmap.prototype.blt = function(source, sx, sy, sw, sh, drawX, drawY, dw, dh) {
 			if (this.needTextMode()) {
@@ -373,19 +379,25 @@ var MK_PluginData = MK_PluginData || {};
 				var sprite = new Sprite(bitmap);
 				sprite.x = drawX;
 				sprite.y = drawY;
-				var canvas = this._canvas;
-				var context = this._context;
-				this.__canvas = bitmap._canvas;
-				this.__context = bitmap._context;
-				this.textModeOff();
-				Bitmap.prototype.blt.call(this, source, sx, sy, sw, sh, 0, 0, dw, dh);
-				this.textModeOn();
-				this.__canvas = canvas;
-				this.__context = context;
+				this.bltTo(bitmap, source, sx, sy, sw, sh, 0, 0, dw, dh);
 				this._textSprite.addLetterSprite(sprite, "", drawX, drawY, sprite.x, sprite.y);
 			} else {
 				Bitmap.prototype.drawText.apply(this, arguments);
 			}
+		};
+		MK_TextBitmap.prototype.bltTo = function(bitmap, ...args) {
+			const canvas = this[MK_TextBitmap._bitmapCanvasKey];
+			const context = this[MK_TextBitmap._bitmapContextKey];
+			this[MK_TextBitmap._bitmapCanvasKey] = bitmap[MK_TextBitmap._bitmapCanvasKey];
+			this[MK_TextBitmap._bitmapContextKey] = bitmap[MK_TextBitmap._bitmapContextKey];
+			const textMode = this._textMode;
+			this.textModeOff();
+			Bitmap.prototype.blt.call(this, ...args);
+			if (textMode) {
+				this.textModeOn();
+			}
+			this[MK_TextBitmap._bitmapCanvasKey] = canvas;
+			this[MK_TextBitmap._bitmapContextKey] = context;
 		};
 		MK_TextBitmap.prototype.drawCircle = function(drawX, drawY, radius, color) {
 			if (this.needTextMode()) {
