@@ -44,6 +44,7 @@ public plugins for RPGMakerMV / MZ
 | EventTriggerPriority | 事件触发优先级 | √ | √ |
 | ItemChoiceFilter | 筛选可选物品 | × | √ |
 | KeyConfig | 按键配置 | √ | √ |
+| [InputKeyExtend](plugins/InputKeyExtend) | Input按键拓展 | √ | √ |
 
 ## Copyright
 Copyright (C) 2019-2024 Mikan(MikanHako)  
