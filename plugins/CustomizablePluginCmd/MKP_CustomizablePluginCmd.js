@@ -1,6 +1,6 @@
 /*!
- * MKP_CustomizablePluginCmd - v0.2.1
- * Updated : 2024-01-06T20:04:00+0800
+ * MKP_CustomizablePluginCmd - v0.2.1.fix1
+ * Updated : 2024-05-31T22:32:00+0800
  * 
  * https://github.com/MikanHako1024
  * Copyright (C) 2019-2024 Mikan(MikanHako)
@@ -18,10 +18,12 @@
  * -----[QQ] 312859582
  * ================================================================
  * 
- * @plugindesc 自定义插件指令 <MKP_CustomizablePluginCmd> v0.2.1
+ * @plugindesc 自定义插件指令 <MKP_CustomizablePluginCmd> v0.2.1.fix1
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024
  * @version 
+ *   v0.2.1.fix1 (2024-05-31T22:32:00+0800) 
+ *     补充缺少的参数结构 PluginCmdUnit
  *   v0.2.1 (2024-01-06T20:04:00+0800) 
  *     更新插件模板
  *   v0.2.0 (2023-04-11T01:55:00+0800) 
@@ -41,8 +43,8 @@
  * 
  * @help
  * 
- * 自定义插件指令 <MKP_CustomizablePluginCmd> v0.2.1
- * Updated : 2024-01-06T20:04:00+0800
+ * 自定义插件指令 <MKP_CustomizablePluginCmd> v0.2.1.fix1
+ * Updated : 2024-05-31T22:32:00+0800
  * 
  * 
  * ## 简要说明
@@ -193,6 +195,34 @@
  * @param ---- endline ----
  * 
  */
+/*~struct~PluginCmdUnit:
+ * 
+ * @param _
+ * @text 描述
+ * @desc 描述, 可自由修改
+ * @type note
+ * @default 
+ * 
+ * @param eid
+ * @text 公共事件
+ * @desc 
+ * @type common_event
+ * @default 0
+ * 
+ * @param cmd
+ * @text 命令
+ * @desc 自定义插件指令的命令名
+ * 不可包含空格，可用空格以外的任意字符
+ * @type string
+ * @default 
+ * 
+ * @param vars
+ * @text 参数
+ * @desc 自定义插件指令的参数
+ * 插件指令的参数将依次储存到对应变量
+ * @type variable[]
+ * @default []
+ */
 
 
 
@@ -206,8 +236,8 @@ var MK_PluginData = MK_PluginData || {};
 	const pluginData = {
 		MikanPluginDataCoreUpdatedTime : '2024-01-01T013:00:00+0800',
 		pluginName : 'MKP_CustomizablePluginCmd',
-		pluginVersion : 'v0.2.1',
-		pluginUpdatedTime : '2024-01-06T20:04:00+0800',
+		pluginVersion : 'v0.2.1.fix1',
+		pluginUpdatedTime : '2024-05-31T22:32:00+0800',
 
 		support : {
 			supportForMV : true,
