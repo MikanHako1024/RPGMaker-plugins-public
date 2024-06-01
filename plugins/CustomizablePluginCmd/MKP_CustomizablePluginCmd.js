@@ -1,6 +1,6 @@
 /*!
- * MKP_CustomizablePluginCmd - v0.2.1.fix1
- * Updated : 2024-05-31T22:32:00+0800
+ * MKP_CustomizablePluginCmd - v0.2.1.fix2
+ * Updated : 2024-06-01T19:13:00+0800
  * 
  * https://github.com/MikanHako1024
  * Copyright (C) 2019-2024 Mikan(MikanHako)
@@ -18,10 +18,12 @@
  * -----[QQ] 312859582
  * ================================================================
  * 
- * @plugindesc 自定义插件指令 <MKP_CustomizablePluginCmd> v0.2.1.fix1
+ * @plugindesc 自定义插件指令 <MKP_CustomizablePluginCmd> v0.2.1.fix2
  * @author Mikan(MikanHako)
  * @url https://github.com/MikanHako1024
  * @version 
+ *   v0.2.1.fix2 (2024-06-01T19:13:00+0800) 
+ *     修复 MZ无法执行MV的插件指令 的问题
  *   v0.2.1.fix1 (2024-05-31T22:32:00+0800) 
  *     补充缺少的参数结构 PluginCmdUnit
  *   v0.2.1 (2024-01-06T20:04:00+0800) 
@@ -43,8 +45,8 @@
  * 
  * @help
  * 
- * 自定义插件指令 <MKP_CustomizablePluginCmd> v0.2.1.fix1
- * Updated : 2024-05-31T22:32:00+0800
+ * 自定义插件指令 <MKP_CustomizablePluginCmd> v0.2.1.fix2
+ * Updated : 2024-06-01T19:13:00+0800
  * 
  * 
  * ## 简要说明
@@ -236,8 +238,8 @@ var MK_PluginData = MK_PluginData || {};
 	const pluginData = {
 		MikanPluginDataCoreUpdatedTime : '2024-01-01T013:00:00+0800',
 		pluginName : 'MKP_CustomizablePluginCmd',
-		pluginVersion : 'v0.2.1.fix1',
-		pluginUpdatedTime : '2024-05-31T22:32:00+0800',
+		pluginVersion : 'v0.2.1.fix2',
+		pluginUpdatedTime : '2024-06-01T19:13:00+0800',
 
 		support : {
 			supportForMV : true,
@@ -468,6 +470,20 @@ var MK_PluginData = MK_PluginData || {};
 
 
 
+// ？改 自定义插件指令的参数可以设置成需要转换控制字符 ...
+
+// ？为 任意插件指令中 特殊标识如 ${} 包裹控制字符 表示需要转换控制字符 ...
+// ？如 Command Arg1 ${\V[2]}
+
+// ？或 使用前缀型插件指令调用下一条插件指令，并转换下一条插件指令的控制字符 ...
+// ？如 ConvertCmd  ,  Command Arg1 \V[2]
+
+// ？或 直接在原插件指令前加一个命令表示需要转换 ...
+// ？如 ConvertCmd Command Arg1 \V[2]
+
+
+
+
 ;(function() {
 	// logic
 
@@ -578,6 +594,7 @@ var MK_PluginData = MK_PluginData || {};
 				realArgs = this.MK_convertArgs(args, true);
 				realCommand = realArgs.shift();
 			}
+			_MK_Game_Interpreter_pluginCommand.call(this, realCommand, realArgs);
 			this.customPluginCommand.call(this, realCommand, realArgs);
 		};
 
